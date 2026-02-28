@@ -1,0 +1,57 @@
+# Jarvis CEO Runtime Dockerfile
+FROM ubuntu:24.04 AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    curl git ca-certificates gnupg jq unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g pnpm@9
+
+RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash \
+    && az extension add --name azure-devops --yes
+
+RUN npm install -g @anthropic-ai/claude-code
+
+# kubectl for agent spawning
+RUN curl -fsSL https://dl.k8s.io/release/v1.30.0/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
+    && chmod +x /usr/local/bin/kubectl
+
+RUN groupadd -r agent && useradd -r -g agent -m -d /home/agent -s /bin/bash agent
+
+FROM base AS build
+WORKDIR /app
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY packages/shared/package.json packages/shared/
+COPY packages/agent-runtime/package.json packages/agent-runtime/
+COPY packages/jarvis-runtime/package.json packages/jarvis-runtime/
+RUN pnpm install --frozen-lockfile
+
+COPY tsconfig.base.json ./
+COPY packages/shared/ packages/shared/
+COPY packages/agent-runtime/ packages/agent-runtime/
+COPY packages/jarvis-runtime/ packages/jarvis-runtime/
+RUN pnpm --filter @agentcoders/shared build \
+    && pnpm --filter @agentcoders/agent-runtime build \
+    && pnpm --filter @agentcoders/jarvis-runtime build
+
+FROM base AS production
+WORKDIR /app
+
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/packages/shared/dist ./packages/shared/dist
+COPY --from=build /app/packages/shared/package.json ./packages/shared/
+COPY --from=build /app/packages/agent-runtime/dist ./packages/agent-runtime/dist
+COPY --from=build /app/packages/agent-runtime/package.json ./packages/agent-runtime/
+COPY --from=build /app/packages/jarvis-runtime/dist ./packages/jarvis-runtime/dist
+COPY --from=build /app/packages/jarvis-runtime/package.json ./packages/jarvis-runtime/
+
+RUN mkdir -p /workspace && chown agent:agent /workspace
+USER agent
+WORKDIR /workspace
+
+EXPOSE 8080
+CMD ["node", "/app/packages/jarvis-runtime/dist/jarvis.js"]

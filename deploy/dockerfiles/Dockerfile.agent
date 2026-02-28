@@ -1,0 +1,66 @@
+# Agent Runtime Dockerfile
+# Based on agent-pod-toolchain.md spec: Ubuntu 24.04, Node.js 22+, Claude Code CLI, Azure CLI, git
+FROM ubuntu:24.04 AS base
+
+# Prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    ca-certificates \
+    gnupg \
+    jq \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 22
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g pnpm@9
+
+# Install Azure CLI + DevOps extension
+RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash \
+    && az extension add --name azure-devops --yes
+
+# Install Claude Code CLI
+RUN npm install -g @anthropic-ai/claude-code
+
+# Create non-root agent user
+RUN groupadd -r agent && useradd -r -g agent -m -d /home/agent -s /bin/bash agent
+
+# Build stage
+FROM base AS build
+WORKDIR /app
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY packages/shared/package.json packages/shared/
+COPY packages/agent-runtime/package.json packages/agent-runtime/
+RUN pnpm install --frozen-lockfile
+
+COPY tsconfig.base.json ./
+COPY packages/shared/ packages/shared/
+COPY packages/agent-runtime/ packages/agent-runtime/
+RUN pnpm --filter @agentcoders/shared build \
+    && pnpm --filter @agentcoders/agent-runtime build
+
+# Production stage
+FROM base AS production
+WORKDIR /app
+
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/packages/shared/dist ./packages/shared/dist
+COPY --from=build /app/packages/shared/package.json ./packages/shared/
+COPY --from=build /app/packages/agent-runtime/dist ./packages/agent-runtime/dist
+COPY --from=build /app/packages/agent-runtime/package.json ./packages/agent-runtime/
+COPY --from=build /app/package.json ./
+
+# Create workspace directory
+RUN mkdir -p /workspace && chown agent:agent /workspace
+
+USER agent
+WORKDIR /workspace
+
+EXPOSE 8080
+
+CMD ["node", "/app/packages/agent-runtime/dist/main.js"]

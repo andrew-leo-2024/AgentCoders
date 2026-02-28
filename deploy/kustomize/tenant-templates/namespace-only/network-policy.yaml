@@ -1,0 +1,62 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: TENANT_NAMESPACE
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-agent-egress
+  namespace: TENANT_NAMESPACE
+spec:
+  podSelector:
+    matchLabels:
+      agentcoders.io/component: agent
+  policyTypes:
+    - Egress
+  egress:
+    # Redis in agent-shared
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: agent-shared
+          podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - port: 6379
+    # Postgres in agent-shared
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: agent-shared
+          podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - port: 5432
+    # External APIs (ADO, Claude, git)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-health-probes
+  namespace: TENANT_NAMESPACE
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 8080

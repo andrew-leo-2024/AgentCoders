@@ -1,0 +1,26 @@
+# Telegram Gateway Dockerfile
+FROM node:22-slim AS build
+WORKDIR /app
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY packages/shared/package.json packages/shared/
+COPY packages/telegram-gateway/package.json packages/telegram-gateway/
+RUN corepack enable && pnpm install --frozen-lockfile
+
+COPY tsconfig.base.json ./
+COPY packages/shared/ packages/shared/
+COPY packages/telegram-gateway/ packages/telegram-gateway/
+RUN pnpm --filter @agentcoders/shared build \
+    && pnpm --filter @agentcoders/telegram-gateway build
+
+FROM node:22-slim AS production
+RUN groupadd -r app && useradd -r -g app app
+WORKDIR /app
+
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/packages/shared/dist ./packages/shared/dist
+COPY --from=build /app/packages/shared/package.json ./packages/shared/
+COPY --from=build /app/packages/telegram-gateway/dist ./packages/telegram-gateway/dist
+COPY --from=build /app/packages/telegram-gateway/package.json ./packages/telegram-gateway/
+
+USER app
+CMD ["node", "packages/telegram-gateway/dist/bot.js"]

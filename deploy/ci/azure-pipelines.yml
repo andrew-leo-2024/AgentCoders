@@ -1,0 +1,140 @@
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - packages/**
+      - deploy/**
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  ACR_NAME: 'agentcoders'
+  IMAGE_TAG: '$(Build.BuildId)'
+  NODE_VERSION: '22.x'
+
+stages:
+  - stage: Build
+    displayName: 'Build & Test'
+    jobs:
+      - job: BuildAndTest
+        displayName: 'Build, Lint, Test'
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(NODE_VERSION)
+            displayName: 'Use Node.js $(NODE_VERSION)'
+
+          - script: |
+              npm install -g pnpm@9
+              pnpm install --frozen-lockfile
+            displayName: 'Install dependencies'
+
+          - script: pnpm run build
+            displayName: 'Build all packages'
+
+          - script: pnpm run typecheck
+            displayName: 'Type check'
+
+          - script: pnpm run test:unit
+            displayName: 'Run unit tests'
+            continueOnError: false
+
+          - script: pnpm run test:integration
+            displayName: 'Run integration tests'
+            continueOnError: true
+
+  - stage: Docker
+    displayName: 'Build Docker Images'
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: BuildImages
+        displayName: 'Build & Push Images'
+        steps:
+          - task: Docker@2
+            inputs:
+              containerRegistry: '$(ACR_NAME)'
+              command: 'login'
+            displayName: 'Login to ACR'
+
+          - script: |
+              for service in agent jarvis gateway billing tenant-manager dashboard; do
+                IMAGE="$(ACR_NAME).azurecr.io/agentcoders/$service:$(IMAGE_TAG)"
+                docker build -t "$IMAGE" \
+                  -f deploy/dockerfiles/Dockerfile.$service .
+                docker push "$IMAGE"
+                # Also tag as latest
+                docker tag "$IMAGE" "$(ACR_NAME).azurecr.io/agentcoders/$service:latest"
+                docker push "$(ACR_NAME).azurecr.io/agentcoders/$service:latest"
+              done
+            displayName: 'Build and push all images'
+
+  - stage: DeployDev
+    displayName: 'Deploy to Dev'
+    dependsOn: Docker
+    condition: succeeded()
+    jobs:
+      - deployment: DeployDev
+        displayName: 'Deploy to Dev'
+        environment: 'dev'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: Kubernetes@1
+                  inputs:
+                    connectionType: 'Azure Resource Manager'
+                    azureSubscriptionEndpoint: '$(AZURE_SUBSCRIPTION)'
+                    azureResourceGroup: '$(AKS_RESOURCE_GROUP)'
+                    kubernetesCluster: '$(AKS_CLUSTER_NAME)'
+                    command: 'apply'
+                    arguments: '-k deploy/kustomize/overlays/dev/'
+                  displayName: 'Apply Kustomize dev overlay'
+
+  - stage: DeployStaging
+    displayName: 'Deploy to Staging'
+    dependsOn: DeployDev
+    condition: succeeded()
+    jobs:
+      - deployment: DeployStaging
+        displayName: 'Deploy to Staging'
+        environment: 'staging'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: Kubernetes@1
+                  inputs:
+                    connectionType: 'Azure Resource Manager'
+                    azureSubscriptionEndpoint: '$(AZURE_SUBSCRIPTION)'
+                    azureResourceGroup: '$(AKS_RESOURCE_GROUP)'
+                    kubernetesCluster: '$(AKS_CLUSTER_NAME)'
+                    command: 'apply'
+                    arguments: '-k deploy/kustomize/overlays/staging/'
+                  displayName: 'Apply Kustomize staging overlay'
+
+  - stage: DeployProduction
+    displayName: 'Deploy to Production'
+    dependsOn: DeployStaging
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployProduction
+        displayName: 'Deploy to Production'
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: Kubernetes@1
+                  inputs:
+                    connectionType: 'Azure Resource Manager'
+                    azureSubscriptionEndpoint: '$(AZURE_SUBSCRIPTION)'
+                    azureResourceGroup: '$(AKS_RESOURCE_GROUP)'
+                    kubernetesCluster: '$(AKS_CLUSTER_NAME)'
+                    command: 'apply'
+                    arguments: '-k deploy/kustomize/overlays/production/'
+                  displayName: 'Apply Kustomize production overlay'

@@ -1,0 +1,22 @@
+{
+  "name": "@agentcoders/telegram-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/bot.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/bot.js",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@agentcoders/shared": "workspace:*",
+    "ioredis": "^5.4.0",
+    "telegraf": "^4.16.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

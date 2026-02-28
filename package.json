@@ -1,0 +1,25 @@
+{
+  "name": "agentcoders",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit/",
+    "test:integration": "vitest run tests/integration/",
+    "test:watch": "vitest",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean",
+    "db:generate": "pnpm --filter @agentcoders/shared db:generate",
+    "db:migrate": "pnpm --filter @agentcoders/shared db:migrate",
+    "db:push": "pnpm --filter @agentcoders/shared db:push"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "turbo": "^2.4.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

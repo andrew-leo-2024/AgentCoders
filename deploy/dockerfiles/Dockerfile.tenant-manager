@@ -1,0 +1,35 @@
+# Tenant Manager Dockerfile
+FROM node:22-slim AS build
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# kubectl for tenant provisioning
+RUN curl -fsSL https://dl.k8s.io/release/v1.30.0/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
+    && chmod +x /usr/local/bin/kubectl
+
+WORKDIR /app
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY packages/shared/package.json packages/shared/
+COPY packages/tenant-manager/package.json packages/tenant-manager/
+RUN corepack enable && pnpm install --frozen-lockfile
+
+COPY tsconfig.base.json ./
+COPY packages/shared/ packages/shared/
+COPY packages/tenant-manager/ packages/tenant-manager/
+RUN pnpm --filter @agentcoders/shared build \
+    && pnpm --filter @agentcoders/tenant-manager build
+
+FROM node:22-slim AS production
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+RUN curl -fsSL https://dl.k8s.io/release/v1.30.0/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
+    && chmod +x /usr/local/bin/kubectl
+RUN groupadd -r app && useradd -r -g app app
+WORKDIR /app
+
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/packages/shared/dist ./packages/shared/dist
+COPY --from=build /app/packages/shared/package.json ./packages/shared/
+COPY --from=build /app/packages/tenant-manager/dist ./packages/tenant-manager/dist
+COPY --from=build /app/packages/tenant-manager/package.json ./packages/tenant-manager/
+
+USER app
+EXPOSE 8082
+CMD ["node", "packages/tenant-manager/dist/tenant-api.js"]

@@ -1,0 +1,23 @@
+{
+  "name": "@agentcoders/jarvis-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/jarvis.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/jarvis.js",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@agentcoders/shared": "workspace:*",
+    "drizzle-orm": "^0.38.0",
+    "ioredis": "^5.4.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

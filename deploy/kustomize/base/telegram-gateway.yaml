@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telegram-gateway
+  namespace: agent-shared
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telegram-gateway
+  template:
+    metadata:
+      labels:
+        app: telegram-gateway
+    spec:
+      containers:
+        - name: gateway
+          image: agentcoders/telegram-gateway:latest
+          env:
+            - name: REDIS_URL
+              value: redis://redis.agent-shared.svc.cluster.local:6379
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: connection-string
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: telegram-credentials
+                  key: bot-token
+            - name: TELEGRAM_OWNER_CHAT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: telegram-credentials
+                  key: owner-chat-id
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi

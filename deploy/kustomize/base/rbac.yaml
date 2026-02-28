@@ -1,0 +1,17 @@
+# Jarvis namespace-scoped Role — applied per-vertical namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: jarvis-role
+  # namespace is set per-vertical at provisioning time
+spec: {}
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["configmaps", "pods", "persistentvolumeclaims"]
+    verbs: ["get", "list", "create", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
