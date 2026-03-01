@@ -11,10 +11,10 @@ const config: Config = {
     v4: true,
   },
 
-  url: 'https://frankmax-com.github.io',
+  url: 'https://andrew-leo-2024.github.io',
   baseUrl: '/agentcoders-docs/',
 
-  organizationName: 'frankmax-com',
+  organizationName: 'andrew-leo-2024',
   projectName: 'agentcoders-docs',
   trailingSlash: false,
 
