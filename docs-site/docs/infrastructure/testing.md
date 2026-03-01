@@ -12,7 +12,12 @@ title: Testing
 - **Coverage reporters:** text, json, html
 - **Config:** single root `vitest.config.ts` (no per-package configs)
 
-### Configuration
+### Configuration — v2
+
+:::info Version History
+- **v1:** Defaults only (globals, node environment, coverage).
+- **v2 (2026-03-01):** Added `testTimeout: 30s`, `hookTimeout: 120s`, `pool: 'forks'`, `fileParallelism: false` for testcontainers integration tests. Added `drizzle-orm`, `pg`, `ioredis`, `testcontainers`, `@testcontainers/postgresql` as root devDeps.
+:::
 
 ```typescript
 // vitest.config.ts
@@ -22,6 +27,10 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.test.ts', 'packages/*/src/**/*.test.ts'],
     exclude: ['node_modules', 'dist'],
+    testTimeout: 30_000,
+    hookTimeout: 120_000,
+    pool: 'forks',
+    fileParallelism: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -102,16 +111,38 @@ export default defineConfig({
 |-----------|-------|
 | `tests/unit/management-models/spotify.test.ts` | Topology configuration, squad/tribe structure, round-robin work assignment, metrics reporting, squad size defaults, role assignment (product-owner, developer) |
 
+### Tenant Manager Auth — v2
+
+:::info Added 2026-03-01
+:::
+
+| Test File | Tests |
+|-----------|-------|
+| `tests/unit/auth.test.ts` | API key generation (`keyId.hmac` format, uniqueness), HMAC-SHA256 validation (valid key, wrong secret, tampered HMAC, missing dot, empty string, empty keyId, empty HMAC), Bearer token extraction (valid header, case-insensitive, missing header, empty string, wrong scheme, no token after Bearer) |
+
+## Integration Tests — v2
+
+:::info Added 2026-03-01
+Uses `testcontainers` + `@testcontainers/postgresql` to spin up real Postgres 16 and Redis 7 containers. Requires Docker. Shared setup in `tests/integration/setup.ts`.
+:::
+
+| Test File | Tests | What It Validates |
+|-----------|-------|-------------------|
+| `tests/integration/db-schema.test.ts` | 4 | Migrations create all 25+ tables, all 16 enums, Drizzle ORM insert/select, unique slug constraint |
+| `tests/integration/redis-pubsub.test.ts` | 3 | Tenant-scoped channel delivery, cross-tenant isolation (no leakage), multi-subscriber broadcast |
+| `tests/integration/dwi-lifecycle.test.ts` | 4 | DWI creation in `in_progress`, 6-gate progression to `completed`+`isBillable`, incomplete gates = not billable, duration tracking on failure |
+| `tests/integration/tenant-crud.test.ts` | 5 | Tenant defaults (namespace tier, starter plan, provisioning status), unique slug enforcement, name/plan updates, status lifecycle (provisioning→active→suspended→deprovisioning), JSONB verticals storage |
+
 ## Running Tests
 
 ```bash
 # All tests
 pnpm run test
 
-# Unit tests only
+# Unit tests only (87 tests, ~2s)
 pnpm run test:unit
 
-# Integration tests only
+# Integration tests only (16 tests, ~56s, requires Docker)
 pnpm run test:integration
 
 # Watch mode (re-runs on file changes)

@@ -70,5 +70,12 @@ Three tiers of tenant isolation:
 - **[Getting Started](./getting-started)** — Prerequisites, install, build, test
 - **[Architecture Overview](./architecture/overview)** — System design and data flow
 - **[Packages](./packages/shared)** — All 14 packages with detailed component docs
-- **[Business Processes](./processes/agent-work-lifecycle)** — End-to-end workflows
+- **[Business Processes](./processes/agent-work-lifecycle)** — End-to-end workflows, SOPs, and BPMN diagrams
+- **[SOPs](./processes/sop-tenant-onboarding)** — Standard Operating Procedures for onboarding and operations
+- **[BPMN Diagrams](./processes/bpmn-diagrams)** — Complete process diagrams with RACI matrix
 - **[Infrastructure](./infrastructure/database-schema)** — DB schema, Redis, env vars, deploy
+- **[Platform Roadmap](./roadmap/approach-v1)** — Phased implementation approach (versioned)
+- **[OSS Integration Catalog](./roadmap/oss-catalog-v1)** — 60+ open-source projects evaluated for fork-audit-integrate
+- **[Tenant Integration Guide](./tenant-guide/overview)** — How tenants (AINEFF, future AINEs) consume AgentCoders
+- **[AINEFF Onboarding](./tenant-guide/aineff-onboarding)** — First tenant: 85 repos, 43 systems, phased build plan
+- **[Agent Context](./agent-context/resume-prompt)** — Resume prompt for any Claude agent to recover full platform context

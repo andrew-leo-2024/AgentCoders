@@ -43,6 +43,9 @@ const sidebars: SidebarsConfig = {
         'processes/billing-dwi-lifecycle',
         'processes/telegram-commands',
         'processes/escalation-flow',
+        'processes/sop-tenant-onboarding',
+        'processes/sop-agent-operations',
+        'processes/bpmn-diagrams',
       ],
     },
     {
@@ -54,6 +57,30 @@ const sidebars: SidebarsConfig = {
         'infrastructure/environment-variables',
         'infrastructure/deployment',
         'infrastructure/testing',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Platform Roadmap',
+      items: [
+        'roadmap/approach-v1',
+        'roadmap/oss-discovery-prompt',
+        'roadmap/oss-catalog-v1',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Tenant Integration Guide',
+      items: [
+        'tenant-guide/overview',
+        'tenant-guide/aineff-onboarding',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Agent Context',
+      items: [
+        'agent-context/resume-prompt',
       ],
     },
   ],
