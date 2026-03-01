@@ -41,6 +41,7 @@ export const billingConfigSchema = baseConfigSchema.extend({
 
 export const tenantManagerConfigSchema = baseConfigSchema.extend({
   STRIPE_SECRET_KEY: z.string(),
+  API_KEY_SECRET: z.string().min(32),
   K8S_IN_CLUSTER: z.coerce.boolean().default(true),
   HEALTH_PORT: z.coerce.number().int().default(8082),
 });

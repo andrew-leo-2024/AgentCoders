@@ -6,6 +6,10 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.test.ts', 'packages/*/src/**/*.test.ts'],
     exclude: ['node_modules', 'dist'],
+    testTimeout: 30_000,
+    hookTimeout: 120_000,
+    pool: 'forks',
+    fileParallelism: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

@@ -12,6 +12,7 @@ import * as os from 'node:os';
 
 import type { Logger } from '@agentcoders/shared';
 import type { Tenant, IsolationTier } from '@agentcoders/shared';
+import { runMigrations } from '@agentcoders/shared';
 
 import { getTierConfig, generateKustomization, getDbConnectionString } from './isolation-tiers.js';
 
@@ -366,10 +367,25 @@ export class TenantProvisioner {
           error: waitRedis.code !== 0 ? waitRedis.stderr : undefined,
         });
 
-        // Run Drizzle migrations on the dedicated Postgres (placeholder — needs drizzle-kit CLI)
+        // Run Drizzle migrations on the dedicated Postgres
         const dbUrl = getDbConnectionString(tenant);
-        this.logger.info({ dbUrl: dbUrl.replace(/:[^@]+@/, ':***@') }, 'Dedicated DB ready — migrations should be run');
-        steps.push({ name: 'drizzle-migrate', success: true, durationMs: 0, error: 'Placeholder: run drizzle-kit migrate against dedicated DB' });
+        this.logger.info({ dbUrl: dbUrl.replace(/:[^@]+@/, ':***@') }, 'Running Drizzle migrations on dedicated DB');
+        const { result: migrateResult, durationMs: migrateMs } = await timed(async () => {
+          try {
+            await runMigrations(dbUrl);
+            return { success: true, error: undefined };
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            this.logger.error({ err: msg }, 'Drizzle migration failed');
+            return { success: false, error: msg };
+          }
+        });
+        steps.push({
+          name: 'drizzle-migrate',
+          success: migrateResult.success,
+          durationMs: migrateMs,
+          error: migrateResult.error,
+        });
       }
 
       this.logger.info({ tenantId: tenant.id, ns, stepsCount: steps.length }, 'Tenant provisioning complete');

@@ -27,6 +27,7 @@ import type { TenantVertical, VerticalType } from '@agentcoders/shared';
 
 import { OnboardingService, type SignupParams } from './onboarding.js';
 import { QuotaManager } from './quota-manager.js';
+import { extractBearerToken, validateBearerToken } from './auth.js';
 
 // ---------------------------------------------------------------------------
 // Bootstrap
@@ -45,6 +46,7 @@ try {
     LOG_LEVEL: 'info',
     NODE_ENV: 'development',
     STRIPE_SECRET_KEY: process.env['STRIPE_SECRET_KEY'] ?? 'sk_test_placeholder',
+    API_KEY_SECRET: process.env['API_KEY_SECRET'] ?? 'dev-secret-key-minimum-32-characters!!',
     K8S_IN_CLUSTER: false,
     HEALTH_PORT: Number(process.env['HEALTH_PORT'] ?? 8082),
   } as ReturnType<typeof loadConfig<typeof tenantManagerConfigSchema>>;
@@ -184,6 +186,15 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
   if (!matched) {
     jsonResponse(res, 404, { error: 'Not found' });
     return;
+  }
+
+  // Auth guard — bypass health endpoints for K8s probes
+  if (matched.route !== 'healthz' && matched.route !== 'readyz') {
+    const token = extractBearerToken(req.headers.authorization);
+    if (!token || !validateBearerToken(token, config.API_KEY_SECRET)) {
+      jsonResponse(res, 401, { error: 'Unauthorized' });
+      return;
+    }
   }
 
   switch (matched.route) {
