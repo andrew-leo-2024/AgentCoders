@@ -11,8 +11,12 @@ const config: Config = {
     v4: true,
   },
 
-  url: 'https://agentcoders.dev',
-  baseUrl: '/',
+  url: 'https://frankmax-com.github.io',
+  baseUrl: '/agentcoders-docs/',
+
+  organizationName: 'frankmax-com',
+  projectName: 'agentcoders-docs',
+  trailingSlash: false,
 
   onBrokenLinks: 'throw',
 
