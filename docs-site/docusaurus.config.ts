@@ -12,10 +12,10 @@ const config: Config = {
   },
 
   url: 'https://andrew-leo-2024.github.io',
-  baseUrl: '/agentcoders-docs/',
+  baseUrl: '/AgentCoders/',
 
   organizationName: 'andrew-leo-2024',
-  projectName: 'agentcoders-docs',
+  projectName: 'AgentCoders',
   trailingSlash: false,
 
   onBrokenLinks: 'throw',
