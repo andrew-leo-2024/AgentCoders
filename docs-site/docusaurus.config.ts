@@ -7,10 +7,6 @@ const config: Config = {
   tagline: 'Autonomous AI Development Teams for Rent',
   favicon: 'img/favicon.ico',
 
-  future: {
-    v4: true,
-  },
-
   url: 'https://andrew-leo-2024.github.io',
   baseUrl: '/AgentCoders/',
 
