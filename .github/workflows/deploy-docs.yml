@@ -33,7 +33,7 @@ jobs:
           cache-dependency-path: docs-site/package-lock.json
 
       - run: npm ci
-      - run: npm run build
+      - run: npx docusaurus build
 
       - uses: actions/upload-pages-artifact@v3
         with:
