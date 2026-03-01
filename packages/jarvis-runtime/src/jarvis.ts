@@ -18,6 +18,8 @@ import { SquadManager } from './squad-manager.js';
 import { EscalationHandler } from './escalation-handler.js';
 import { ConflictResolver } from './conflict-resolver.js';
 import { DailySummary } from './daily-summary.js';
+import { GsdPlanner } from './gsd-planner.js';
+import { ContextManager } from './context-manager.js';
 
 export class Jarvis {
   private pub!: Redis;
@@ -30,6 +32,8 @@ export class Jarvis {
   private dailySummary!: DailySummary;
   private spawner!: AgentSpawner;
   private decomposer!: TaskDecomposer;
+  private gsdPlanner!: GsdPlanner;
+  private contextManager!: ContextManager;
   private dailySummaryTimer: ReturnType<typeof setInterval> | null = null;
   private shuttingDown = false;
   private handlers = new Map<string, Array<(msg: RedisMessage) => void>>();
@@ -108,6 +112,9 @@ export class Jarvis {
       this.config.ADO_PROJECT,
       this.logger,
     );
+
+    this.gsdPlanner = new GsdPlanner(this.logger);
+    this.contextManager = new ContextManager(this.logger);
 
     this.dailySummary = new DailySummary(
       this.config.TENANT_ID,

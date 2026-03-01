@@ -1,0 +1,22 @@
+{
+  "name": "@agentcoders/management-models",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/model-interface.js",
+  "types": "dist/model-interface.d.ts",
+  "exports": {
+    ".": "./dist/model-interface.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@agentcoders/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

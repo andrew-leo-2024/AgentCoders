@@ -1,0 +1,23 @@
+{
+  "name": "@agentcoders/enhancement-layer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/pipeline.js",
+  "types": "dist/pipeline.d.ts",
+  "exports": {
+    ".": "./dist/pipeline.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@agentcoders/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

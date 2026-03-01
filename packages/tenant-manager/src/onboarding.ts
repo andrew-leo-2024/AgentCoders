@@ -24,12 +24,17 @@ import { TenantProvisioner, type ProvisioningResult } from './tenant-provisioner
 // Types
 // ---------------------------------------------------------------------------
 
+export type ScmProviderType = 'ado' | 'github';
+export type ManagementModelType = 'spotify' | 'safe' | 'scrum-at-scale' | 'team-topologies';
+
 export interface SignupParams {
   name: string;
   slug: string;
   isolationTier?: IsolationTier;
   subscriptionPlan?: SubscriptionPlan;
   resourceQuotas?: Partial<ResourceQuotas>;
+  scmProvider?: ScmProviderType;
+  managementModel?: ManagementModelType;
 }
 
 export interface ProvisioningStatus {

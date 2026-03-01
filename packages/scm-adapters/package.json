@@ -1,0 +1,23 @@
+{
+  "name": "@agentcoders/scm-adapters",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/adapter-factory.js",
+  "types": "dist/adapter-factory.d.ts",
+  "exports": {
+    ".": "./dist/adapter-factory.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@agentcoders/shared": "workspace:*",
+    "@octokit/rest": "^21.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

@@ -213,3 +213,194 @@ export const invoices = pgTable('invoices', {
   status: invoiceStatusEnum('status').notNull().default('draft'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+// --- New enums for platform extension ---
+export const auditEventCategoryEnum = pgEnum('audit_event_category', ['agent', 'task', 'model', 'enhancement', 'security', 'billing', 'governance']);
+export const failurePatternStatusEnum = pgEnum('failure_pattern_status', ['active', 'resolved', 'suppressed']);
+export const failureCategoryEnum = pgEnum('failure_category', ['model-error', 'timeout', 'validation', 'infrastructure', 'logic', 'unknown']);
+export const insurancePolicyTypeEnum = pgEnum('insurance_policy_type', ['sla-guarantee', 'quality-guarantee', 'uptime-guarantee', 'data-protection']);
+export const insurancePolicyStatusEnum = pgEnum('insurance_policy_status', ['active', 'expired', 'claimed', 'suspended']);
+export const memoryCategoryEnum = pgEnum('memory_category', ['project', 'area', 'resource', 'archive']);
+export const modelProviderEnum = pgEnum('model_provider', ['anthropic', 'openai', 'google', 'ollama']);
+export const skillCategoryEnum = pgEnum('skill_category', ['frontend', 'backend', 'devops', 'security', 'testing', 'design', 'general']);
+export const managementModelTypeEnum = pgEnum('management_model_type', ['spotify', 'safe', 'scrum-at-scale', 'team-topologies']);
+export const routingStrategyEnum = pgEnum('routing_strategy', ['cost-optimized', 'quality-optimized', 'latency-optimized', 'round-robin']);
+
+// Audit Events
+export const auditEvents = pgTable('audit_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  agentId: varchar('agent_id', { length: 100 }).notNull(),
+  eventType: varchar('event_type', { length: 100 }).notNull(),
+  category: auditEventCategoryEnum('category').notNull(),
+  details: jsonb('details').$type<Record<string, unknown>>().default({}),
+  parentEventId: uuid('parent_event_id'),
+  timestamp: timestamp('timestamp').notNull().defaultNow(),
+});
+
+// Telemetry Records
+export const telemetryRecords = pgTable('telemetry_records', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  agentId: varchar('agent_id', { length: 100 }).notNull(),
+  metricName: varchar('metric_name', { length: 200 }).notNull(),
+  metricValue: real('metric_value').notNull(),
+  dimensions: jsonb('dimensions').$type<Record<string, string>>().default({}),
+  recordedAt: timestamp('recorded_at').notNull().defaultNow(),
+});
+
+// Failure Patterns
+export const failurePatterns = pgTable('failure_patterns', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  patternHash: varchar('pattern_hash', { length: 64 }).notNull(),
+  signature: text('signature').notNull(),
+  category: failureCategoryEnum('category').notNull().default('unknown'),
+  occurrenceCount: integer('occurrence_count').notNull().default(1),
+  firstSeenAt: timestamp('first_seen_at').notNull().defaultNow(),
+  lastSeenAt: timestamp('last_seen_at').notNull().defaultNow(),
+  resolution: text('resolution'),
+  status: failurePatternStatusEnum('status').notNull().default('active'),
+});
+
+// Insurance Policies
+export const insurancePolicies = pgTable('insurance_policies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  policyType: insurancePolicyTypeEnum('policy_type').notNull(),
+  coverageDetails: jsonb('coverage_details').$type<Record<string, unknown>>().default({}),
+  slaTargets: jsonb('sla_targets').$type<Record<string, number>>().default({}),
+  status: insurancePolicyStatusEnum('status').notNull().default('active'),
+  activatedAt: timestamp('activated_at').notNull().defaultNow(),
+  expiresAt: timestamp('expires_at').notNull(),
+});
+
+// Insurance Claims
+export const insuranceClaims = pgTable('insurance_claims', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  policyId: uuid('policy_id').notNull().references(() => insurancePolicies.id),
+  incidentDetails: jsonb('incident_details').$type<Record<string, unknown>>().default({}),
+  resolution: text('resolution'),
+  resolvedAt: timestamp('resolved_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Agent Memories
+export const agentMemories = pgTable('agent_memories', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  agentId: varchar('agent_id', { length: 100 }).notNull(),
+  category: memoryCategoryEnum('category').notNull().default('resource'),
+  key: varchar('key', { length: 500 }).notNull(),
+  content: text('content').notNull(),
+  relevanceScore: real('relevance_score').notNull().default(1.0),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  expiresAt: timestamp('expires_at'),
+});
+
+// Model Routes
+export const modelRoutes = pgTable('model_routes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  provider: modelProviderEnum('provider').notNull(),
+  modelId: varchar('model_id', { length: 100 }).notNull(),
+  capabilities: jsonb('capabilities').$type<{
+    maxTokens: number;
+    supportsVision: boolean;
+    supportsTools: boolean;
+    supportsStreaming: boolean;
+    contextWindow: number;
+  }>().notNull(),
+  pricing: jsonb('pricing').$type<{
+    inputPer1kTokens: number;
+    outputPer1kTokens: number;
+    currency: string;
+  }>().notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+  priority: integer('priority').notNull().default(0),
+});
+
+// Model Route Logs
+export const modelRouteLogs = pgTable('model_route_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  agentId: varchar('agent_id', { length: 100 }).notNull(),
+  routeId: uuid('route_id').notNull().references(() => modelRoutes.id),
+  inputTokens: bigint('input_tokens', { mode: 'number' }).notNull(),
+  outputTokens: bigint('output_tokens', { mode: 'number' }).notNull(),
+  latencyMs: integer('latency_ms').notNull(),
+  qualityScore: real('quality_score'),
+  costUsd: real('cost_usd').notNull(),
+  recordedAt: timestamp('recorded_at').notNull().defaultNow(),
+});
+
+// Skills
+export const skills = pgTable('skills', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 200 }).notNull().unique(),
+  category: skillCategoryEnum('category').notNull(),
+  version: varchar('version', { length: 50 }).notNull().default('1.0.0'),
+  description: text('description').notNull(),
+  content: text('content').notNull(),
+  isBuiltin: boolean('is_builtin').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Agent Skills (many-to-many)
+export const agentSkills = pgTable('agent_skills', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  agentId: varchar('agent_id', { length: 100 }).notNull(),
+  skillId: uuid('skill_id').notNull().references(() => skills.id),
+  activatedAt: timestamp('activated_at').notNull().defaultNow(),
+});
+
+// Skill Scores
+export const skillScores = pgTable('skill_scores', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  skillId: uuid('skill_id').notNull().references(() => skills.id),
+  taskType: varchar('task_type', { length: 100 }).notNull(),
+  qualityDelta: real('quality_delta').notNull().default(0),
+  sampleCount: integer('sample_count').notNull().default(0),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Management Configs
+export const managementConfigs = pgTable('management_configs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  modelType: managementModelTypeEnum('model_type').notNull(),
+  topology: jsonb('topology').$type<Record<string, unknown>>().notNull(),
+  cadence: jsonb('cadence').$type<Record<string, unknown>>().notNull(),
+  escalationPaths: jsonb('escalation_paths').$type<Array<{ fromGroup: string; toGroup: string; triggerConditions: string[] }>>().default([]),
+});
+
+// Enhancement Runs
+export const enhancementRuns = pgTable('enhancement_runs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  agentId: varchar('agent_id', { length: 100 }).notNull(),
+  workItemId: integer('work_item_id'),
+  pipelineConfig: jsonb('pipeline_config').$type<Record<string, unknown>>().notNull(),
+  stages: jsonb('stages').$type<Array<{ stage: string; type: string; durationMs: number; modified: boolean }>>().default([]),
+  finalScore: real('final_score'),
+  durationMs: integer('duration_ms'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Decision Provenance
+export const decisionProvenance = pgTable('decision_provenance', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  agentId: varchar('agent_id', { length: 100 }).notNull(),
+  workItemId: integer('work_item_id'),
+  decisionType: varchar('decision_type', { length: 100 }).notNull(),
+  modelUsed: varchar('model_used', { length: 100 }).notNull(),
+  promptHash: varchar('prompt_hash', { length: 64 }).notNull(),
+  contextSources: jsonb('context_sources').$type<string[]>().default([]),
+  confidenceScore: real('confidence_score').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});

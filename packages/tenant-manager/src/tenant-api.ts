@@ -14,6 +14,14 @@ import {
   tenantManagerConfigSchema,
   getDb,
   tenants,
+  auditEvents,
+  telemetryRecords,
+  failurePatterns,
+  modelRoutes,
+  skills,
+  managementConfigs,
+  enhancementRuns,
+  insurancePolicies,
 } from '@agentcoders/shared';
 import type { TenantVertical, VerticalType } from '@agentcoders/shared';
 
@@ -112,6 +120,53 @@ function matchRoute(
   const statusMatch = /^\/api\/tenants\/([a-f0-9-]{36})\/provisioning-status$/.exec(pathname);
   if (statusMatch && method === 'GET') {
     return { route: 'provisioning-status', tenantId: statusMatch[1] };
+  }
+
+  // GET /api/tenants/:id/audit
+  const auditMatch = /^\/api\/tenants\/([a-f0-9-]{36})\/audit$/.exec(pathname);
+  if (auditMatch && method === 'GET') {
+    return { route: 'get-audit', tenantId: auditMatch[1] };
+  }
+
+  // GET /api/tenants/:id/telemetry
+  const telemetryMatch = /^\/api\/tenants\/([a-f0-9-]{36})\/telemetry$/.exec(pathname);
+  if (telemetryMatch && method === 'GET') {
+    return { route: 'get-telemetry', tenantId: telemetryMatch[1] };
+  }
+
+  // GET /api/tenants/:id/failure-patterns
+  const failurePatternsMatch = /^\/api\/tenants\/([a-f0-9-]{36})\/failure-patterns$/.exec(pathname);
+  if (failurePatternsMatch && method === 'GET') {
+    return { route: 'get-failure-patterns', tenantId: failurePatternsMatch[1] };
+  }
+
+  // GET /api/tenants/:id/model-routes
+  const modelRoutesMatch = /^\/api\/tenants\/([a-f0-9-]{36})\/model-routes$/.exec(pathname);
+  if (modelRoutesMatch && method === 'GET') {
+    return { route: 'get-model-routes', tenantId: modelRoutesMatch[1] };
+  }
+
+  // GET /api/skills
+  if (pathname === '/api/skills' && method === 'GET') {
+    return { route: 'get-skills' };
+  }
+
+  // GET /api/tenants/:id/management
+  const managementMatch = /^\/api\/tenants\/([a-f0-9-]{36})\/management$/.exec(pathname);
+  if (managementMatch && method === 'GET') {
+    return { route: 'get-management', tenantId: managementMatch[1] };
+  }
+
+  // GET /api/tenants/:id/enhancements
+  const enhancementsMatch = /^\/api\/tenants\/([a-f0-9-]{36})\/enhancements$/.exec(pathname);
+  if (enhancementsMatch && method === 'GET') {
+    return { route: 'get-enhancements', tenantId: enhancementsMatch[1] };
+  }
+
+  // GET /api/tenants/:id/insurance
+  const insuranceMatch = /^\/api\/tenants\/([a-f0-9-]{36})\/insurance$/.exec(pathname);
+  if (insuranceMatch && method === 'GET') {
+    return { route: 'get-insurance', tenantId: insuranceMatch[1] };
   }
 
   return null;
@@ -255,6 +310,62 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     case 'provisioning-status': {
       const status = await onboarding.getProvisioningStatus(matched.tenantId!);
       jsonResponse(res, 200, status);
+      return;
+    }
+
+    // ----- Audit events -----
+    case 'get-audit': {
+      const rows = await db.select().from(auditEvents).where(eq(auditEvents.tenantId, matched.tenantId!));
+      jsonResponse(res, 200, rows);
+      return;
+    }
+
+    // ----- Telemetry -----
+    case 'get-telemetry': {
+      const rows = await db.select().from(telemetryRecords).where(eq(telemetryRecords.tenantId, matched.tenantId!));
+      jsonResponse(res, 200, rows);
+      return;
+    }
+
+    // ----- Failure patterns -----
+    case 'get-failure-patterns': {
+      const rows = await db.select().from(failurePatterns).where(eq(failurePatterns.tenantId, matched.tenantId!));
+      jsonResponse(res, 200, rows);
+      return;
+    }
+
+    // ----- Model routes -----
+    case 'get-model-routes': {
+      const rows = await db.select().from(modelRoutes).where(eq(modelRoutes.tenantId, matched.tenantId!));
+      jsonResponse(res, 200, rows);
+      return;
+    }
+
+    // ----- Skills -----
+    case 'get-skills': {
+      const rows = await db.select().from(skills);
+      jsonResponse(res, 200, rows);
+      return;
+    }
+
+    // ----- Management config -----
+    case 'get-management': {
+      const rows = await db.select().from(managementConfigs).where(eq(managementConfigs.tenantId, matched.tenantId!));
+      jsonResponse(res, 200, rows[0] ?? null);
+      return;
+    }
+
+    // ----- Enhancement runs -----
+    case 'get-enhancements': {
+      const rows = await db.select().from(enhancementRuns).where(eq(enhancementRuns.tenantId, matched.tenantId!));
+      jsonResponse(res, 200, rows);
+      return;
+    }
+
+    // ----- Insurance policies -----
+    case 'get-insurance': {
+      const rows = await db.select().from(insurancePolicies).where(eq(insurancePolicies.tenantId, matched.tenantId!));
+      jsonResponse(res, 200, rows);
       return;
     }
 

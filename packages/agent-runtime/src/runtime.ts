@@ -10,10 +10,14 @@ import { HealthServer } from './health.js';
 import { Watchdog } from './watchdog.js';
 import { Lifecycle } from './lifecycle.js';
 import { PollLoop } from './poll-loop.js';
+import { FreshContextExecutor } from './fresh-context-executor.js';
+import { StateTracker } from './state-tracker.js';
 
 export class AgentRuntime {
   private pollLoop: PollLoop | null = null;
   private lifecycle: Lifecycle | null = null;
+  private freshContextExecutor: FreshContextExecutor | null = null;
+  private stateTracker: StateTracker | null = null;
 
   async start(): Promise<void> {
     const config = getConfig();
@@ -33,6 +37,10 @@ export class AgentRuntime {
     const costTracker = new CostTracker(db, logger);
     const healthServer = new HealthServer(config.AGENT_ID, logger);
     const watchdog = new Watchdog(executor, logger);
+
+    // Initialize platform extension components
+    this.freshContextExecutor = new FreshContextExecutor(logger);
+    this.stateTracker = new StateTracker(logger);
 
     this.lifecycle = new Lifecycle(config.AGENT_ID, executor, redisBus, healthServer, logger);
     this.lifecycle.setup();

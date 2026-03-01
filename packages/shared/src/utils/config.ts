@@ -57,7 +57,36 @@ export function loadConfig<T extends z.ZodTypeAny>(schema: T): z.infer<T> {
   return result.data;
 }
 
+export const modelRouterConfigSchema = baseConfigSchema.extend({
+  DEFAULT_PROVIDER: z.enum(['anthropic', 'openai', 'google', 'ollama']).default('anthropic'),
+  DEFAULT_STRATEGY: z.enum(['cost-optimized', 'quality-optimized', 'latency-optimized', 'round-robin']).default('quality-optimized'),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  OPENAI_API_KEY: z.string().optional(),
+  GOOGLE_API_KEY: z.string().optional(),
+  OLLAMA_BASE_URL: z.string().default('http://localhost:11434'),
+  RATE_LIMIT_RPM: z.coerce.number().int().default(60),
+  HEALTH_PORT: z.coerce.number().int().default(8090),
+});
+
+export const governanceConfigSchema = baseConfigSchema.extend({
+  AUDIT_FLUSH_INTERVAL_MS: z.coerce.number().int().default(5000),
+  TELEMETRY_FLUSH_INTERVAL_MS: z.coerce.number().int().default(10000),
+  FAILURE_PATTERN_WINDOW_MS: z.coerce.number().int().default(3600000),
+  AUTHORITY_DECAY_CHECK_INTERVAL_MS: z.coerce.number().int().default(60000),
+});
+
+export const enhancementConfigSchema = baseConfigSchema.extend({
+  MAX_REFINEMENT_LOOPS: z.coerce.number().int().default(3),
+  CONFIDENCE_THRESHOLD: z.coerce.number().default(0.7),
+  MAX_COST_PER_ENHANCEMENT_USD: z.coerce.number().default(5.0),
+  SECURITY_SCAN_ENABLED: z.coerce.boolean().default(true),
+  PII_DETECTION_ENABLED: z.coerce.boolean().default(true),
+});
+
 export type AgentEnvConfig = z.infer<typeof agentConfigSchema>;
 export type TelegramEnvConfig = z.infer<typeof telegramConfigSchema>;
 export type BillingEnvConfig = z.infer<typeof billingConfigSchema>;
 export type TenantManagerEnvConfig = z.infer<typeof tenantManagerConfigSchema>;
+export type ModelRouterEnvConfig = z.infer<typeof modelRouterConfigSchema>;
+export type GovernanceEnvConfig = z.infer<typeof governanceConfigSchema>;
+export type EnhancementEnvConfig = z.infer<typeof enhancementConfigSchema>;
