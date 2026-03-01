@@ -28,12 +28,12 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: docs-site/package-lock.json
 
       - run: npm ci
-      - run: npx docusaurus build
+      - run: npm run build
 
       - uses: actions/upload-pages-artifact@v3
         with:
