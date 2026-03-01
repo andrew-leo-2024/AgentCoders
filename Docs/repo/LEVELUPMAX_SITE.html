@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LevelUp Max - AI Operator Training & Certification</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --deep-purple: #1A1A2E;
+            --electric-blue: #0F3460;
+            --vibrant-teal: #00D4AA;
+            --white: #FFFFFF;
+            --light-gray: #F5F5F5;
+            --dark-gray: #2D2D44;
+            --medium-gray: #888888;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--white);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--vibrant-teal);
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--white);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--vibrant-teal);
+        }
+
+        .nav-cta {
+            background-color: var(--vibrant-teal);
+            color: var(--deep-purple);
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 212, 170, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav-links {
+                gap: 1rem;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--deep-purple) 0%, var(--electric-blue) 100%);
+            color: var(--white);
+            padding: 140px 2rem 80px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 50%, rgba(0, 212, 170, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(15, 52, 96, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            margin-bottom: 1rem;
+            line-height: 1.1;
+            animation: slideInDown 0.8s ease-out;
+        }
+
+        .hero-subline {
+            font-size: clamp(1.1rem, 3vw, 1.4rem);
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 3rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            animation: slideInUp 0.8s ease-out 0.2s backwards;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+            animation: fadeIn 0.8s ease-out 0.4s backwards;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: clamp(1.5rem, 4vw, 2.2rem);
+            font-weight: 700;
+            color: var(--vibrant-teal);
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 0.5rem;
+        }
+
+        .hero-ctas {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: slideInUp 0.8s ease-out 0.5s backwards;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background-color: var(--vibrant-teal);
+            color: var(--deep-purple);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(0, 212, 170, 0.35);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--white);
+            border: 2px solid var(--vibrant-teal);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--vibrant-teal);
+            color: var(--deep-purple);
+            transform: translateY(-3px);
+        }
+
+        /* Animations */
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Section Styles */
+        section {
+            padding: 80px 2rem;
+        }
+
+        .section-title {
+            font-size: clamp(2rem, 5vw, 3rem);
+            margin-bottom: 1rem;
+            color: var(--deep-purple);
+            text-align: center;
+        }
+
+        .section-subtitle {
+            font-size: 1.1rem;
+            color: var(--medium-gray);
+            text-align: center;
+            margin-bottom: 3rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Opportunity Section */
+        .opportunity {
+            background-color: var(--light-gray);
+        }
+
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .stat-card {
+            background-color: var(--white);
+            padding: 2.5rem 2rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border-top: 4px solid var(--vibrant-teal);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+        }
+
+        .stat-card h3 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            color: var(--vibrant-teal);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card p {
+            font-size: 1rem;
+            color: var(--medium-gray);
+        }
+
+        /* Assessment Section */
+        .assessment {
+            background: linear-gradient(135deg, var(--deep-purple) 0%, var(--electric-blue) 100%);
+            color: var(--white);
+        }
+
+        .assessment-container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .quiz-question {
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .quiz-question.active {
+            display: block;
+        }
+
+        .question-header {
+            margin-bottom: 2rem;
+        }
+
+        .question-number {
+            font-size: 0.9rem;
+            color: var(--vibrant-teal);
+            font-weight: 600;
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            margin-top: 1rem;
+            line-height: 1.5;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--vibrant-teal);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .option {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 2px solid transparent;
+            padding: 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .option:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-color: var(--vibrant-teal);
+        }
+
+        .option.selected {
+            background-color: var(--vibrant-teal);
+            border-color: var(--vibrant-teal);
+            color: var(--deep-purple);
+        }
+
+        .option.correct {
+            background-color: #10B981;
+            border-color: #10B981;
+            color: var(--white);
+        }
+
+        .option.incorrect {
+            background-color: #EF4444;
+            border-color: #EF4444;
+            color: var(--white);
+        }
+
+        .quiz-nav {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2.5rem;
+        }
+
+        .quiz-nav button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: var(--white);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .quiz-nav button:hover {
+            background-color: var(--vibrant-teal);
+            color: var(--deep-purple);
+        }
+
+        .quiz-nav button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .quiz-results {
+            display: none;
+            text-align: center;
+            padding: 3rem 0;
+        }
+
+        .quiz-results.show {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .circular-gauge {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: conic-gradient(var(--vibrant-teal) 0deg, var(--vibrant-teal) var(--score-angle), rgba(255, 255, 255, 0.2) var(--score-angle), rgba(255, 255, 255, 0.2) 360deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 2rem auto;
+            box-shadow: 0 10px 30px rgba(0, 212, 170, 0.3);
+        }
+
+        .gauge-inner {
+            width: 180px;
+            height: 180px;
+            background-color: var(--electric-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .gauge-score {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--vibrant-teal);
+        }
+
+        .gauge-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .rating-badge {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background-color: var(--vibrant-teal);
+            color: var(--deep-purple);
+            border-radius: 20px;
+            font-weight: 600;
+            margin: 1.5rem 0;
+        }
+
+        .percentile-text {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin: 1rem 0;
+        }
+
+        .email-capture {
+            display: flex;
+            gap: 0.5rem;
+            margin: 2rem 0;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .email-capture input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--white);
+            font-size: 0.95rem;
+        }
+
+        .email-capture input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .email-capture input:focus {
+            outline: none;
+            border-color: var(--vibrant-teal);
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .email-capture button {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--vibrant-teal);
+            color: var(--deep-purple);
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .email-capture button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 212, 170, 0.3);
+        }
+
+        /* Tracks Section */
+        .tracks {
+            background-color: var(--white);
+        }
+
+        .tracks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .track-card {
+            background-color: var(--white);
+            border: 2px solid var(--light-gray);
+            border-radius: 12px;
+            padding: 2.5rem 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .track-card:hover {
+            border-color: var(--vibrant-teal);
+            box-shadow: 0 12px 32px rgba(0, 212, 170, 0.15);
+            transform: translateY(-8px);
+        }
+
+        .track-level {
+            display: inline-block;
+            background-color: var(--deep-purple);
+            color: var(--vibrant-teal);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .track-card h3 {
+            font-size: 1.5rem;
+            color: var(--deep-purple);
+            margin-bottom: 0.5rem;
+        }
+
+        .track-price {
+            font-size: 1.3rem;
+            color: var(--vibrant-teal);
+            font-weight: 700;
+            margin: 1rem 0;
+        }
+
+        .track-duration {
+            font-size: 0.9rem;
+            color: var(--medium-gray);
+            margin-bottom: 1.5rem;
+        }
+
+        .track-topics {
+            list-style: none;
+            margin: 1.5rem 0;
+        }
+
+        .track-topics li {
+            padding: 0.6rem 0;
+            font-size: 0.95rem;
+            color: #555;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        .track-topics li:last-child {
+            border-bottom: none;
+        }
+
+        .track-outcome {
+            background-color: var(--light-gray);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            font-size: 0.95rem;
+            color: var(--deep-purple);
+            font-weight: 500;
+        }
+
+        .track-prerequisite {
+            font-size: 0.85rem;
+            color: var(--medium-gray);
+            margin-top: 1rem;
+            font-style: italic;
+        }
+
+        .track-card .btn {
+            width: 100%;
+            margin-top: 1.5rem;
+        }
+
+        /* Learning Section */
+        .learning {
+            background-color: var(--light-gray);
+        }
+
+        .learning-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2.5rem;
+            margin-top: 3rem;
+        }
+
+        .learning-item {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .learning-icon {
+            flex-shrink: 0;
+            width: 60px;
+            height: 60px;
+            background-color: var(--vibrant-teal);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+        }
+
+        .learning-content h4 {
+            font-size: 1.2rem;
+            color: var(--deep-purple);
+            margin-bottom: 0.5rem;
+        }
+
+        .learning-content p {
+            color: var(--medium-gray);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* Career Section */
+        .careers {
+            background-color: var(--white);
+        }
+
+        .careers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .role-card {
+            background: linear-gradient(135deg, rgba(26, 26, 46, 0.05) 0%, rgba(0, 212, 170, 0.05) 100%);
+            border: 1px solid rgba(0, 212, 170, 0.2);
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .role-card:hover {
+            border-color: var(--vibrant-teal);
+            background: linear-gradient(135deg, rgba(26, 26, 46, 0.1) 0%, rgba(0, 212, 170, 0.1) 100%);
+            transform: translateY(-6px);
+        }
+
+        .role-card h4 {
+            font-size: 1.2rem;
+            color: var(--deep-purple);
+            margin-bottom: 0.5rem;
+        }
+
+        .role-salary {
+            font-size: 1.1rem;
+            color: var(--vibrant-teal);
+            font-weight: 700;
+            margin: 1rem 0;
+        }
+
+        /* Ecosystem Section */
+        .ecosystem {
+            background: linear-gradient(135deg, var(--deep-purple) 0%, var(--electric-blue) 100%);
+            color: var(--white);
+        }
+
+        .ecosystem-content {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .ecosystem-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .ecosystem-card {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 2.5rem 2rem;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .ecosystem-card:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-color: var(--vibrant-teal);
+            transform: translateY(-6px);
+        }
+
+        .ecosystem-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--vibrant-teal);
+        }
+
+        .ecosystem-card p {
+            color: rgba(255, 255, 255, 0.85);
+            line-height: 1.7;
+        }
+
+        .ecosystem-link {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.75rem 1.5rem;
+            background-color: var(--vibrant-teal);
+            color: var(--deep-purple);
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .ecosystem-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 212, 170, 0.3);
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--deep-purple);
+            color: var(--white);
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .footer-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .footer-logo {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--vibrant-teal);
+            margin-bottom: 1rem;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .footer-contact {
+            font-size: 0.95rem;
+            margin: 1rem 0;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .footer-contact a {
+            color: var(--vibrant-teal);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-contact a:hover {
+            color: var(--white);
+        }
+
+        .footer-tagline {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            font-style: italic;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .footer-copyright {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            section {
+                padding: 50px 1.5rem;
+            }
+
+            .section-title {
+                font-size: 1.8rem;
+            }
+
+            .stats-bar {
+                gap: 2rem;
+            }
+
+            .hero-ctas {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .nav-links {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .email-capture {
+                flex-direction: column;
+            }
+        }
+
+        /* Utility Classes */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-logo">LevelUp Max</div>
+        <div class="nav-links">
+            <a href="#assessment">Assessment</a>
+            <a href="#tracks">Tracks</a>
+            <a href="#careers">Careers</a>
+            <a href="#ecosystem">Ecosystem</a>
+            <button class="nav-cta" onclick="scrollTo('tracks')">Start Learning</button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Become an AI Operator</h1>
+            <p class="hero-subline">The world is building AI systems. Someone needs to govern them. That someone gets paid.</p>
+
+            <div class="stats-bar">
+                <div class="stat">
+                    <div class="stat-number">74</div>
+                    <div class="stat-label">Enterprise Systems</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">12</div>
+                    <div class="stat-label">Certification Tracks</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">500+</div>
+                    <div class="stat-label">Hours of Training</div>
+                </div>
+            </div>
+
+            <div class="hero-ctas">
+                <button class="btn btn-primary" onclick="scrollTo('assessment')">Start Free Assessment</button>
+                <button class="btn btn-secondary" onclick="scrollTo('tracks')">View Certification Tracks</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Opportunity Section -->
+    <section class="opportunity">
+        <h2 class="section-title">AI Governance Is a $50B Market With Almost No Trained Talent</h2>
+        <p class="section-subtitle">Every company deploying AI needs people who understand accountability, obligation tracking, and pre-incident governance. The supply of trained operators is near zero. We're building that supply.</p>
+
+        <div class="stats-cards">
+            <div class="stat-card">
+                <h3>$127K</h3>
+                <p>Average salary for AI governance roles</p>
+            </div>
+            <div class="stat-card">
+                <h3>340%</h3>
+                <p>Growth in demand for AI operators (2024-2026)</p>
+            </div>
+            <div class="stat-card">
+                <h3>12,000</h3>
+                <p>Enterprise positions unfilled in AI governance</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Assessment Section -->
+    <section class="assessment" id="assessment">
+        <div class="assessment-container">
+            <h2 class="section-title" style="color: var(--white); margin-bottom: 1rem;">Free Governance Assessment</h2>
+            <p class="section-subtitle" style="color: rgba(255, 255, 255, 0.85); margin-bottom: 2rem;">Test your AI governance knowledge in 10 minutes. See how you stack up against other operators.</p>
+
+            <div id="quiz-container">
+                <!-- Question 1 -->
+                <div class="quiz-question active">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 10%;"></div>
+                    </div>
+                    <div class="question-header">
+                        <div class="question-number">Question 1 of 10</div>
+                        <div class="question-text">What is the primary purpose of AI governance?</div>
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="selectOption(this, 0, false)">Slow down AI development</div>
+                        <div class="option" onclick="selectOption(this, 1, true)">Ensure accountability at decision time</div>
+                        <div class="option" onclick="selectOption(this, 2, false)">Comply with regulations</div>
+                        <div class="option" onclick="selectOption(this, 3, false)">Reduce AI spending</div>
+                    </div>
+                </div>
+
+                <!-- Question 2 -->
+                <div class="quiz-question">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 20%;"></div>
+                    </div>
+                    <div class="question-header">
+                        <div class="question-number">Question 2 of 10</div>
+                        <div class="question-text">When should human liability be bound to an AI action?</div>
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="selectOption(this, 0, false)">After the action completes</div>
+                        <div class="option" onclick="selectOption(this, 1, false)">During annual audits</div>
+                        <div class="option" onclick="selectOption(this, 2, true)">At execution time</div>
+                        <div class="option" onclick="selectOption(this, 3, false)">Only when errors occur</div>
+                    </div>
+                </div>
+
+                <!-- Question 3 -->
+                <div class="quiz-question">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 30%;"></div>
+                    </div>
+                    <div class="question-header">
+                        <div class="question-number">Question 3 of 10</div>
+                        <div class="question-text">What is a 'chokepoint' in operational intelligence?</div>
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="selectOption(this, 0, false)">A network bottleneck</div>
+                        <div class="option" onclick="selectOption(this, 1, true)">A decision node where delays create cascading costs</div>
+                        <div class="option" onclick="selectOption(this, 2, false)">A firewall restriction</div>
+                        <div class="option" onclick="selectOption(this, 3, false)">A budget constraint</div>
+                    </div>
+                </div>
+
+                <!-- Question 4 -->
+                <div class="quiz-question">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 40%;"></div>
+                    </div>
+                    <div class="question-header">
+                        <div class="question-number">Question 4 of 10</div>
+                        <div class="question-text">What does 'pre-incident governance' mean?</div>
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="selectOption(this, 0, false)">Insurance before accidents</div>
+                        <div class="option" onclick="selectOption(this, 1, true)">Flagging risky decisions before they cause crises</div>
+                        <div class="option" onclick="selectOption(this, 2, false)">Pre-approving all AI actions</div>
+                        <div class="option" onclick="selectOption(this, 3, false)">Installing safety hardware</div>
+                    </div>
+                </div>
+
+                <!-- Question 5 -->
+                <div class="quiz-question">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 50%;"></div>
+                    </div>
+                    <div class="question-header">
+                        <div class="question-number">Question 5 of 10</div>
+                        <div class="question-text">In the ORF Protocol, what is 'obligation finality'?</div>
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="selectOption(this, 0, false)">When a contract expires</div>
+                        <div class="option" onclick="selectOption(this, 1, true)">The irreversible binding of responsibility to a specific human</div>
+                        <div class="option" onclick="selectOption(this, 2, false)">Final payment on a debt</div>
+                        <div class="option" onclick="selectOption(this, 3, false)">End of a compliance period</div>
+                    </div>
+                </div>
+
+                <!-- Question 6 -->
+                <div class="quiz-question">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 60%;"></div>
+                    </div>
+                    <div class="question-header">
+                        <div class="question-number">Question 6 of 10</div>
+                        <div class="question-text">What is the biggest risk of ungoverned AI systems?</div>
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="selectOption(this, 0, false)">High costs</div>
+                        <div class="option" onclick="selectOption(this, 1, true)">Liability evaporation — no one is accountable</div>
+                        <div class="option" onclick="selectOption(this, 2, false)">Slow processing</div>
+                        <div class="option" onclick="selectOption(this, 3, false)">Data loss</div>
+                    </div>
+                </div>
+
+                <!-- Question 7 -->
+                <div class="quiz-question">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 70%;"></div>
+                    </div>
+                    <div class="question-header">
+                        <div class="question-number">Question 7 of 10</div>
+                        <div class="question-text">An AI operator's primary responsibility is:</div>
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="selectOption(this, 0, false)">Writing AI code</div>
+                        <div class="option" onclick="selectOption(this, 1, true)">Ensuring human accountability is bound to every AI decision</div>
+                        <div class="option" onclick="selectOption(this, 2, false)">Marketing AI products</div>
+                        <div class="option" onclick="selectOption(this, 3, false)">Managing servers</div>
+                    </div>
+                </div>
+
+                <!-- Question 8 -->
+                <div class="quiz-question">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 80%;"></div>
+                    </div>
+                    <div class="question-header">
+                        <div class="question-number">Question 8 of 10</div>
+                        <div class="question-text">What makes billing leakage detection valuable?</div>
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="selectOption(this, 0, false)">It's interesting technology</div>
+                        <div class="option" onclick="selectOption(this, 1, true)">It recovers revenue that's already being lost</div>
+                        <div class="option" onclick="selectOption(this, 2, false)">It reduces headcount</div>
+                        <div class="option" onclick="selectOption(this, 3, false)">It improves AI accuracy</div>
+                    </div>
+                </div>
+
+                <!-- Question 9 -->
+                <div class="quiz-question">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 90%;"></div>
+                    </div>
+                    <div class="question-header">
+                        <div class="question-number">Question 9 of 10</div>
+                        <div class="question-text">Why do enterprise clients pay for governance-as-a-service?</div>
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="selectOption(this, 0, false)">Regulatory requirement only</div>
+                        <div class="option" onclick="selectOption(this, 1, true)">Reducing liability exposure while enabling AI deployment</div>
+                        <div class="option" onclick="selectOption(this, 2, false)">It's trendy</div>
+                        <div class="option" onclick="selectOption(this, 3, false)">Tax benefits</div>
+                    </div>
+                </div>
+
+                <!-- Question 10 -->
+                <div class="quiz-question">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 100%;"></div>
+                    </div>
+                    <div class="question-header">
+                        <div class="question-number">Question 10 of 10</div>
+                        <div class="question-text">The 'Atomic Constraint' states that:</div>
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="selectOption(this, 0, false)">AI should be contained in small units</div>
+                        <div class="option" onclick="selectOption(this, 1, true)">No irreversible action without a bound human liability bearer</div>
+                        <div class="option" onclick="selectOption(this, 2, false)">Atoms of data must be encrypted</div>
+                        <div class="option" onclick="selectOption(this, 3, false)">Constraints should be minimal</div>
+                    </div>
+                </div>
+
+                <!-- Results Screen -->
+                <div class="quiz-results" id="quiz-results">
+                    <h3 style="font-size: 1.8rem; margin-bottom: 1rem;">Assessment Complete</h3>
+
+                    <div class="circular-gauge" id="gauge">
+                        <div class="gauge-inner">
+                            <div class="gauge-score" id="score-display">0/10</div>
+                            <div class="gauge-label">Your Score</div>
+                        </div>
+                    </div>
+
+                    <div class="rating-badge" id="rating-badge">Rating</div>
+                    <p class="percentile-text" id="percentile-text">Your governance knowledge puts you in the top X%</p>
+
+                    <p style="font-size: 1rem; color: rgba(255, 255, 255, 0.85); margin: 1.5rem 0;">Ready to level up? Start your certification journey.</p>
+
+                    <button class="btn btn-primary" onclick="scrollTo('tracks')">Start Your Certification Track</button>
+
+                    <div class="email-capture" style="margin-top: 2rem;">
+                        <input type="email" placeholder="your@email.com" id="email-input">
+                        <button onclick="captureEmail()">Get Report</button>
+                    </div>
+                </div>
+
+                <!-- Quiz Navigation -->
+                <div class="quiz-nav" id="quiz-nav">
+                    <button onclick="previousQuestion()" id="prev-btn" disabled>Previous</button>
+                    <button onclick="nextQuestion()" id="next-btn">Next</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tracks Section -->
+    <section class="tracks" id="tracks">
+        <h2 class="section-title">Certification Tracks</h2>
+        <p class="section-subtitle">Four pathways to become a certified AI operator. Start free, advance at your pace, enter the market.</p>
+
+        <div class="tracks-grid">
+            <!-- Track 1 -->
+            <div class="track-card">
+                <span class="track-level">Level 1</span>
+                <h3>Foundations</h3>
+                <div class="track-price">FREE</div>
+                <div class="track-duration">20 hours of self-paced learning</div>
+
+                <ul class="track-topics">
+                    <li>AI governance basics</li>
+                    <li>Obligation tracking</li>
+                    <li>The ORF Protocol</li>
+                    <li>Accountability frameworks</li>
+                </ul>
+
+                <div class="track-outcome">Foundation Certificate in AI Governance</div>
+
+                <button class="btn btn-primary">Start Free</button>
+            </div>
+
+            <!-- Track 2 -->
+            <div class="track-card">
+                <span class="track-level">Level 2</span>
+                <h3>Specialist</h3>
+                <div class="track-price">$299</div>
+                <div class="track-duration">60 hours of guided learning</div>
+
+                <ul class="track-topics">
+                    <li>Pre-incident governance</li>
+                    <li>Chokepoint analysis</li>
+                    <li>Billing leakage detection</li>
+                    <li>Enterprise deployment</li>
+                </ul>
+
+                <div class="track-outcome">Certified AI Governance Specialist</div>
+                <div class="track-prerequisite">Prerequisite: Level 1</div>
+
+                <button class="btn btn-primary">Enroll Now</button>
+            </div>
+
+            <!-- Track 3 -->
+            <div class="track-card">
+                <span class="track-level">Level 3</span>
+                <h3>Operator</h3>
+                <div class="track-price">$799</div>
+                <div class="track-duration">120 hours of intensive training</div>
+
+                <ul class="track-topics">
+                    <li>Full system deployment</li>
+                    <li>Operator protocols</li>
+                    <li>Venture cell management</li>
+                    <li>Client-facing governance</li>
+                </ul>
+
+                <div class="track-outcome">Certified AI Operator</div>
+                <div class="track-prerequisite">Prerequisite: Level 2</div>
+
+                <button class="btn btn-primary">Apply</button>
+            </div>
+
+            <!-- Track 4 -->
+            <div class="track-card">
+                <span class="track-level">Intensive</span>
+                <h3>Venture Cell Bootcamp</h3>
+                <div class="track-price">$2,499</div>
+                <div class="track-duration">8 weeks intensive cohort</div>
+
+                <ul class="track-topics">
+                    <li>End-to-end venture cell ops</li>
+                    <li>Revenue generation</li>
+                    <li>Client acquisition</li>
+                    <li>System deployment at scale</li>
+                </ul>
+
+                <div class="track-outcome">Venture Cell Operator License + Job Placement</div>
+                <div class="track-prerequisite">Prerequisite: Level 3 or equivalent</div>
+
+                <button class="btn btn-primary">Apply</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Learning Section -->
+    <section class="learning">
+        <h2 class="section-title">What You'll Learn</h2>
+        <p class="section-subtitle">Master the frameworks, tools, and protocols that govern enterprise AI systems.</p>
+
+        <div class="learning-grid">
+            <div class="learning-item">
+                <div class="learning-icon">⚖️</div>
+                <div class="learning-content">
+                    <h4>AI Governance Frameworks</h4>
+                    <p>Master the ORF Protocol and Atomic Constraint — the foundational patterns for binding human accountability to every AI decision.</p>
+                </div>
+            </div>
+
+            <div class="learning-item">
+                <div class="learning-icon">🎯</div>
+                <div class="learning-content">
+                    <h4>Chokepoint Intelligence</h4>
+                    <p>Identify and monetize operational bottlenecks where delays cascade into organizational costs. Turn inefficiency detection into revenue.</p>
+                </div>
+            </div>
+
+            <div class="learning-item">
+                <div class="learning-icon">💰</div>
+                <div class="learning-content">
+                    <h4>Billing Recovery</h4>
+                    <p>Find and recover leaked enterprise revenue through systematic billing leakage detection. Recover money that's already being lost.</p>
+                </div>
+            </div>
+
+            <div class="learning-item">
+                <div class="learning-icon">🚨</div>
+                <div class="learning-content">
+                    <h4>Pre-Incident Analysis</h4>
+                    <p>Flag risky decisions before they cause crises. Master the governance patterns that prevent AI incidents before they happen.</p>
+                </div>
+            </div>
+
+            <div class="learning-item">
+                <div class="learning-icon">🏢</div>
+                <div class="learning-content">
+                    <h4>Enterprise Deployment</h4>
+                    <p>Deploy AI systems with full accountability infrastructure. Understand how to operationalize governance across complex organizations.</p>
+                </div>
+            </div>
+
+            <div class="learning-item">
+                <div class="learning-icon">🚀</div>
+                <div class="learning-content">
+                    <h4>Venture Cell Operations</h4>
+                    <p>Run a profitable AI governance practice. Build, scale, and manage a venture cell that generates revenue and creates market value.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Career Section -->
+    <section class="careers" id="careers">
+        <h2 class="section-title">Career Outcomes</h2>
+        <p class="section-subtitle">Where our operators work. Real roles. Real salaries.</p>
+
+        <div class="careers-grid">
+            <div class="role-card">
+                <h4>AI Governance Analyst</h4>
+                <div class="role-salary">$95K – $130K</div>
+                <p>Entry-level operator role. Deploy and monitor governance systems at enterprise clients.</p>
+            </div>
+
+            <div class="role-card">
+                <h4>Enterprise AI Operator</h4>
+                <div class="role-salary">$110K – $160K</div>
+                <p>Mid-level operator. Manage multi-system deployments and client relationships.</p>
+            </div>
+
+            <div class="role-card">
+                <h4>Chokepoint Intelligence Specialist</h4>
+                <div class="role-salary">$100K – $140K</div>
+                <p>Specialized role identifying and monetizing operational bottlenecks for enterprise clients.</p>
+            </div>
+
+            <div class="role-card">
+                <h4>Venture Cell Lead</h4>
+                <div class="role-salary">$120K – $180K + equity</div>
+                <p>Lead a venture cell team. Build and scale a profitable governance practice.</p>
+            </div>
+
+            <div class="role-card">
+                <h4>Chief Accountability Officer</h4>
+                <div class="role-salary">$180K – $250K</div>
+                <p>Executive-level role. Shape AI governance strategy for enterprise organizations.</p>
+            </div>
+
+            <div class="role-card">
+                <h4>AI Governance Consultant</h4>
+                <div class="role-salary">$120K – $200K+</div>
+                <p>Independent consultant role. Work with multiple clients on custom governance solutions.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ecosystem Section -->
+    <section class="ecosystem" id="ecosystem">
+        <div class="ecosystem-content">
+            <h2 class="section-title" style="color: var(--white);">LevelUp Max is Part of the FrankMax Digital Ecosystem</h2>
+            <p class="section-subtitle" style="color: rgba(255, 255, 255, 0.85);">Our training creates the operators who deploy and govern the systems built by our partners. One ecosystem. One vision.</p>
+        </div>
+
+        <div class="ecosystem-cards">
+            <div class="ecosystem-card">
+                <h3>FrankMax Digital</h3>
+                <p>The enterprise AI governance platform and product suite that our operators deploy in the field. Where theory meets practice.</p>
+                <a href="https://frankmax.digital" class="ecosystem-link" target="_blank">Visit frankmax.digital</a>
+            </div>
+
+            <div class="ecosystem-card">
+                <h3>Andrew Palupillai</h3>
+                <p>The founder and architect behind the frameworks, protocols, and governance philosophy that power LevelUp Max training and the broader FrankMax ecosystem.</p>
+                <a href="https://andrewfranklinleo.com" class="ecosystem-link" target="_blank">Visit andrewfranklinleo.com</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-logo">LevelUp Max</div>
+            <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.9rem; margin-bottom: 1rem;">A FrankMax Digital Company</div>
+
+            <div class="footer-contact">
+                <a href="mailto:andrew.palupillai@frankmax.digital">andrew.palupillai@frankmax.digital</a>
+            </div>
+
+            <div class="footer-tagline">The world needs AI operators. Start becoming one today.</div>
+
+            <div class="footer-copyright">© 2026 FrankMax Digital. All rights reserved.</div>
+        </div>
+    </footer>
+
+    <script>
+        let currentQuestion = 0;
+        let score = 0;
+        const answers = new Array(10).fill(null);
+
+        function selectOption(element, index, isCorrect) {
+            const options = element.parentElement.querySelectorAll('.option');
+
+            // If already answered, show result
+            if (answers[currentQuestion] !== null) {
+                return;
+            }
+
+            options.forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+
+            // After a delay, show correct/incorrect
+            setTimeout(() => {
+                if (isCorrect) {
+                    score++;
+                    element.classList.remove('selected');
+                    element.classList.add('correct');
+                    answers[currentQuestion] = true;
+                } else {
+                    element.classList.remove('selected');
+                    element.classList.add('incorrect');
+                    answers[currentQuestion] = false;
+
+                    // Highlight correct answer
+                    options.forEach(opt => {
+                        if (opt.textContent.includes(getCorrectAnswer(currentQuestion))) {
+                            opt.classList.add('correct');
+                        }
+                    });
+                }
+
+                document.getElementById('next-btn').disabled = false;
+            }, 300);
+        }
+
+        function getCorrectAnswer(questionIndex) {
+            const answers = [
+                'Ensure accountability at decision time',
+                'At execution time',
+                'A decision node where delays create cascading costs',
+                'Flagging risky decisions before they cause crises',
+                'The irreversible binding of responsibility to a specific human',
+                'Liability evaporation — no one is accountable',
+                'Ensuring human accountability is bound to every AI decision',
+                'It recovers revenue that\'s already being lost',
+                'Reducing liability exposure while enabling AI deployment',
+                'No irreversible action without a bound human liability bearer'
+            ];
+            return answers[questionIndex];
+        }
+
+        function nextQuestion() {
+            if (answers[currentQuestion] === null) return;
+
+            if (currentQuestion < 9) {
+                currentQuestion++;
+                document.querySelectorAll('.quiz-question').forEach(q => q.classList.remove('active'));
+                document.querySelectorAll('.quiz-question')[currentQuestion].classList.add('active');
+
+                document.getElementById('prev-btn').disabled = false;
+                document.getElementById('next-btn').disabled = true;
+                document.getElementById('next-btn').textContent = currentQuestion === 9 ? 'See Results' : 'Next';
+            } else {
+                showResults();
+            }
+        }
+
+        function previousQuestion() {
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                document.querySelectorAll('.quiz-question').forEach(q => q.classList.remove('active'));
+                document.querySelectorAll('.quiz-question')[currentQuestion].classList.add('active');
+
+                document.getElementById('next-btn').disabled = false;
+                document.getElementById('next-btn').textContent = 'Next';
+
+                if (currentQuestion === 0) {
+                    document.getElementById('prev-btn').disabled = true;
+                }
+            }
+        }
+
+        function showResults() {
+            document.getElementById('quiz-container').style.display = 'none';
+            const resultsDiv = document.getElementById('quiz-results');
+            resultsDiv.classList.add('show');
+
+            const percentage = (score / 10) * 100;
+            const scoreAngle = (score / 10) * 360;
+
+            document.getElementById('gauge').style.setProperty('--score-angle', scoreAngle + 'deg');
+            document.getElementById('score-display').textContent = score + '/10';
+
+            let rating = 'Beginner';
+            if (score >= 9) rating = 'Expert';
+            else if (score >= 7) rating = 'Advanced';
+            else if (score >= 5) rating = 'Intermediate';
+
+            document.getElementById('rating-badge').textContent = rating;
+
+            let percentile = 'the bottom';
+            if (percentage >= 90) percentile = 'the top 10%';
+            else if (percentage >= 75) percentile = 'the top 25%';
+            else if (percentage >= 50) percentile = 'the top 50%';
+
+            document.getElementById('percentile-text').textContent = `Your governance knowledge puts you in ${percentile}`;
+        }
+
+        function captureEmail() {
+            const email = document.getElementById('email-input').value;
+            if (email) {
+                alert(`Report sent to ${email}! Check your inbox.`);
+            }
+        }
+
+        function scrollTo(sectionId) {
+            const element = document.getElementById(sectionId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Set initial button states
+        document.getElementById('prev-btn').disabled = true;
+        document.getElementById('next-btn').disabled = true;
+    </script>
+</body>
+</html>
