@@ -133,6 +133,23 @@ Uses `testcontainers` + `@testcontainers/postgresql` to spin up real Postgres 16
 | `tests/integration/dwi-lifecycle.test.ts` | 4 | DWI creation in `in_progress`, 6-gate progression to `completed`+`isBillable`, incomplete gates = not billable, duration tracking on failure |
 | `tests/integration/tenant-crud.test.ts` | 5 | Tenant defaults (namespace tier, starter plan, provisioning status), unique slug enforcement, name/plan updates, status lifecycle (provisioning→active→suspended→deprovisioning), JSONB verticals storage |
 
+## E2E Integration Test
+
+The E2E integration test (`packages/shared/src/e2e-test.ts`) wires all 6 core AgentCoders packages into a single pipeline:
+
+| Package | Role |
+|---------|------|
+| `jarvis-runtime` | Orchestration — plans and delegates |
+| `agent-runtime` | Execution — Agent instances with tools |
+| `model-router` | AI — routes completion calls |
+| `scm-adapters` | SCM — GitHubAdapter for real commits |
+| `agent-memory` | Memory — per-agent context storage |
+| `shared` | Glue — types and test host |
+
+JarvisCEO submits an objective, plans 5 sequential steps (researcher → architect → coder → tester → reviewer), and executes each via real Agent instances using the `stepExecutor` callback. The coder step commits real files to GitHub.
+
+See [E2E Integration](/infrastructure/e2e-integration) for architecture details, Mermaid diagrams, and run instructions.
+
 ## Running Tests
 
 ```bash

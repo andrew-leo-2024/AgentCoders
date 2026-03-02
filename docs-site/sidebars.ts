@@ -57,6 +57,7 @@ const sidebars: SidebarsConfig = {
         'infrastructure/environment-variables',
         'infrastructure/deployment',
         'infrastructure/testing',
+        'infrastructure/e2e-integration',
       ],
     },
     {

@@ -16,6 +16,10 @@ const config: Config = {
 
   onBrokenLinks: 'throw',
 
+  markdown: {
+    mermaid: true,
+  },
+
   i18n: {
     defaultLocale: 'en',
     locales: ['en'],
@@ -28,6 +32,9 @@ const config: Config = {
         docs: {
           sidebarPath: './sidebars.ts',
           routeBasePath: '/',
+          editUrl: 'https://github.com/andrew-leo-2024/AgentCoders/edit/main/docs-site/',
+          showLastUpdateTime: true,
+          showLastUpdateAuthor: true,
         },
         blog: false,
         theme: {
@@ -37,9 +44,28 @@ const config: Config = {
     ],
   ],
 
+  themes: [
+    '@docusaurus/theme-mermaid',
+    [
+      '@easyops-cn/docusaurus-search-local',
+      {
+        hashed: true,
+        indexBlog: false,
+        docsRouteBasePath: '/',
+      },
+    ],
+  ],
+
   themeConfig: {
     colorMode: {
       respectPrefersColorScheme: true,
+    },
+    announcementBar: {
+      id: 'e2e_integration',
+      content: 'E2E Integration wired — JarvisCEO now delegates to real Agent instances with live GitHub commits. <a href="/AgentCoders/infrastructure/e2e-integration">Read more →</a>',
+      backgroundColor: '#1E2761',
+      textColor: '#CADCFC',
+      isCloseable: true,
     },
     navbar: {
       title: 'AgentCoders',
@@ -51,7 +77,7 @@ const config: Config = {
           label: 'Documentation',
         },
         {
-          href: 'https://github.com/agentcoders/agentcoders',
+          href: 'https://github.com/andrew-leo-2024/AgentCoders',
           label: 'GitHub',
           position: 'right',
         },
@@ -76,8 +102,32 @@ const config: Config = {
             { label: 'Database Schema', to: '/infrastructure/database-schema' },
           ],
         },
+        {
+          title: 'Ecosystem',
+          items: [
+            { label: 'AINEFF Docs', href: 'https://andrew-leo-2024.github.io/aineff-docs/' },
+            { label: 'AINEFF Architecture', href: 'https://andrew-leo-2024.github.io/aineff-docs/docs/architecture/overview' },
+            { label: 'Agent Build Manifest', href: 'https://andrew-leo-2024.github.io/aineff-docs/docs/building/agent-build-manifest' },
+          ],
+        },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} AgentCoders. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} AgentCoders — Part of the AINEFF Ecosystem. Built with Docusaurus.`,
+    },
+    mermaid: {
+      theme: {
+        light: 'base',
+        dark: 'dark',
+      },
+      options: {
+        themeVariables: {
+          primaryColor: '#00D4AA',
+          primaryTextColor: '#1E2761',
+          primaryBorderColor: '#00B894',
+          lineColor: '#CADCFC',
+          secondaryColor: '#1E2761',
+          tertiaryColor: '#0D1330',
+        },
+      },
     },
     prism: {
       theme: prismThemes.github,

@@ -141,6 +141,70 @@ Generates comprehensive daily metrics and sends via Telegram (309 lines):
 | Revenue/DWI | Billable DWIs, revenue, margin |
 | Agent Stats | Total, idle, working, stuck, offline |
 
+### Pluggable Step Execution
+
+JarvisCEO supports a `stepExecutor` callback in `JarvisConfig` that delegates plan steps to real Agent instances instead of using the built-in simulation:
+
+```typescript
+interface JarvisConfig {
+  // ...existing fields...
+  /** Optional callback to execute a plan step via a real agent instead of simulation. */
+  stepExecutor?: (step: PlanStep, agentId: string) => Promise<TaskOutcome>;
+}
+```
+
+When `stepExecutor` is provided, Jarvis calls it for each step during `executeObjective()`. The callback receives the `PlanStep` (with role, description, and dependencies) and the assigned `agentId`. It returns a `TaskOutcome` indicating success or failure.
+
+```mermaid
+sequenceDiagram
+    participant J as JarvisCEO
+    participant SE as stepExecutor
+    participant A as Agent Instance
+    participant T as Registered Tools
+
+    J->>J: Plan objective into steps
+    loop For each PlanStep
+        J->>SE: stepExecutor(step, agentId)
+        SE->>A: Look up agent by step.assignTo
+        A->>T: executeTool("ai.complete", ...)
+        T-->>A: Tool result
+        A->>T: executeTool("github.commit", ...)
+        T-->>A: Commit SHA
+        SE-->>J: TaskOutcome {status, output, durationMs}
+        J->>J: Update delegator state
+    end
+```
+
+**Example: Wiring Agents to JarvisCEO**
+
+```typescript
+const jarvis = new JarvisCEO({
+  jarvisId: 'jarvis-prod',
+  name: 'Jarvis',
+  model: { provider: 'anthropic', modelId: 'claude-sonnet-4-20250514' },
+  delegationStrategy: 'sequential',
+  maxSpecialists: 10,
+  reviewBeforeComplete: false,
+  escalateOnFailure: true,
+
+  stepExecutor: async (step, agentId) => {
+    const agent = agents.get(step.assignTo);
+    const result = await agent.executeTool('ai.complete', {
+      prompt: step.description,
+    });
+    return {
+      stepId: step.stepId,
+      agentId,
+      status: 'completed',
+      output: { content: result.content },
+      durationMs: result.latencyMs,
+    };
+  },
+});
+```
+
+See the [E2E Integration page](/infrastructure/e2e-integration) for a full working example that wires 5 specialist agents through JarvisCEO with real GitHub commits.
+
 ### AdoShim (`ado-shim.ts`)
 
 Lightweight Azure DevOps REST client for Jarvis:
