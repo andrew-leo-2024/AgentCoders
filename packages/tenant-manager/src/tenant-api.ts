@@ -51,7 +51,7 @@ try {
     REDIS_URL: process.env['REDIS_URL'] ?? 'redis://localhost:6379',
     LOG_LEVEL: 'info',
     NODE_ENV: 'development',
-    STRIPE_SECRET_KEY: process.env['STRIPE_SECRET_KEY'] ?? 'sk_test_placeholder',
+    STRIPE_SECRET_KEY: process.env['STRIPE_SECRET_KEY'] ?? '',
     API_KEY_SECRET: process.env['API_KEY_SECRET'] ?? 'dev-secret-key-minimum-32-characters!!',
     K8S_IN_CLUSTER: false,
     HEALTH_PORT: Number(process.env['HEALTH_PORT'] ?? 8082),

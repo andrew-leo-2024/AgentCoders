@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jarvis-runtime
+  namespace: agent-shared
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jarvis-runtime
+  template:
+    metadata:
+      labels:
+        app: jarvis-runtime
+        app.kubernetes.io/part-of: agentcoders
+    spec:
+      serviceAccountName: tenant-manager
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: jarvis
+          image: agentcoders/jarvis-runtime:latest
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 10"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: connection-string
+            - name: REDIS_URL
+              value: redis://redis.agent-shared.svc.cluster.local:6379
+            - name: TENANT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: jarvis-config
+                  key: tenant-id
+            - name: JARVIS_NAMESPACE
+              value: jarvis
+            - name: SCM_PROVIDER
+              valueFrom:
+                secretKeyRef:
+                  name: scm-credentials
+                  key: provider
+            # GitHub SCM (used when SCM_PROVIDER=github)
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: scm-credentials
+                  key: github-token
+                  optional: true
+            - name: GITHUB_OWNER
+              valueFrom:
+                secretKeyRef:
+                  name: scm-credentials
+                  key: github-owner
+                  optional: true
+            - name: GITHUB_REPO
+              valueFrom:
+                secretKeyRef:
+                  name: scm-credentials
+                  key: github-repo
+                  optional: true
+            # ADO SCM (used when SCM_PROVIDER=ado)
+            - name: ADO_ORG_URL
+              valueFrom:
+                secretKeyRef:
+                  name: scm-credentials
+                  key: ado-org-url
+                  optional: true
+            - name: ADO_PROJECT
+              valueFrom:
+                secretKeyRef:
+                  name: scm-credentials
+                  key: ado-project
+                  optional: true
+            - name: ADO_PAT
+              valueFrom:
+                secretKeyRef:
+                  name: scm-credentials
+                  key: ado-pat
+                  optional: true
+            - name: TELEGRAM_CHAT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: telegram-credentials
+                  key: owner-chat-id
+            - name: AGENT_IMAGE
+              value: agentcoders/agent-runtime:latest
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jarvis-config
+  namespace: agent-shared
+data:
+  tenant-id: "00000000-0000-0000-0000-000000000000"

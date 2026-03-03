@@ -31,7 +31,7 @@ export class Jarvis {
   private conflictResolver!: ConflictResolver;
   private dailySummary!: DailySummary;
   private spawner!: AgentSpawner;
-  private decomposer!: TaskDecomposer;
+  private decomposer: TaskDecomposer | null = null;
   private gsdPlanner!: GsdPlanner;
   private contextManager!: ContextManager;
   private dailySummaryTimer: ReturnType<typeof setInterval> | null = null;
@@ -70,14 +70,19 @@ export class Jarvis {
     // Initialize database
     const db = getDb(this.config.DATABASE_URL);
 
-    // Build the ADO client (minimal — for task decomposer)
-    const { AdoClient } = await import('./ado-shim.js');
-    const adoClient = new AdoClient(
-      this.config.ADO_ORG_URL,
-      this.config.ADO_PROJECT,
-      this.config.ADO_PAT,
-      this.logger,
-    );
+    // Build the ADO client for task decomposer (only when using ADO SCM)
+    let adoClient: InstanceType<typeof import('./ado-shim.js').AdoClient> | null = null;
+    if (this.config.SCM_PROVIDER === 'ado' && this.config.ADO_ORG_URL && this.config.ADO_PROJECT && this.config.ADO_PAT) {
+      const { AdoClient } = await import('./ado-shim.js');
+      adoClient = new AdoClient(
+        this.config.ADO_ORG_URL,
+        this.config.ADO_PROJECT,
+        this.config.ADO_PAT,
+        this.logger,
+      );
+    } else if (this.config.SCM_PROVIDER === 'ado') {
+      this.logger.warn('ADO SCM selected but missing ADO_ORG_URL/ADO_PROJECT/ADO_PAT');
+    }
 
     // Initialize components
     this.squadManager = new SquadManager(
@@ -107,11 +112,11 @@ export class Jarvis {
       this.logger,
     );
 
-    this.decomposer = new TaskDecomposer(
+    this.decomposer = adoClient ? new TaskDecomposer(
       adoClient,
-      this.config.ADO_PROJECT,
+      this.config.ADO_PROJECT ?? '',
       this.logger,
-    );
+    ) : null;
 
     this.gsdPlanner = new GsdPlanner(this.logger);
     this.contextManager = new ContextManager(this.logger);

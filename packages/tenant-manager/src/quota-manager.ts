@@ -5,11 +5,11 @@
  * Updates both the K8s ResourceQuota object and the DB record.
  */
 
-import { eq } from 'drizzle-orm';
+import { eq, and, gte, sql } from 'drizzle-orm';
 import { spawn } from 'node:child_process';
 
 import type { Database, Logger } from '@agentcoders/shared';
-import { tenants } from '@agentcoders/shared';
+import { tenants, dwiRecords, claudeSessions } from '@agentcoders/shared';
 import type { ResourceQuotas } from '@agentcoders/shared';
 
 import { getTierConfig } from './isolation-tiers.js';
@@ -203,13 +203,33 @@ export class QuotaManager {
       }
     }
 
+    // Count active (non-terminal) DWI work items for this tenant
+    const activeDwis = await this.db.select({ count: sql<number>`count(*)::int` })
+      .from(dwiRecords)
+      .where(and(
+        eq(dwiRecords.tenantId, tenantId),
+        sql`${dwiRecords.status} IN ('in_progress', 'pending_review')`,
+      ));
+    const activeTasks = activeDwis[0]?.count ?? 0;
+
+    // Aggregate today's Claude session costs for this tenant
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const dailyCosts = await this.db.select({ total: sql<number>`coalesce(sum(${claudeSessions.estimatedCostUsd}), 0)::real` })
+      .from(claudeSessions)
+      .where(and(
+        eq(claudeSessions.tenantId, tenantId),
+        gte(claudeSessions.startedAt, todayStart),
+      ));
+    const dailySpentUsd = Math.round((dailyCosts[0]?.total ?? 0) * 100) / 100;
+
     return {
       maxAgents: tenant.resourceQuotas.maxAgents,
       activeAgents,
       maxConcurrentTasks: tenant.resourceQuotas.maxConcurrentTasks,
-      activeTasks: 0, // TODO: query active work items
+      activeTasks,
       dailyBudgetUsd: tenant.resourceQuotas.dailyBudgetUsd,
-      dailySpentUsd: 0, // TODO: aggregate from usage_records
+      dailySpentUsd,
       cpuRequestTotal: `${tenant.resourceQuotas.maxAgents * parseInt(tierCfg.defaultCpuRequest)}m`,
       cpuUsed,
       memoryRequestTotal: `${tenant.resourceQuotas.maxAgents * parseInt(tierCfg.defaultMemoryRequest)}Mi`,

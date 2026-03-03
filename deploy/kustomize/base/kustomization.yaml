@@ -10,6 +10,7 @@ resources:
   - telegram-gateway.yaml
   - billing-service.yaml
   - tenant-manager.yaml
+  - jarvis-runtime.yaml
   - dashboard.yaml
   - ingress.yaml
   - network-policies.yaml
