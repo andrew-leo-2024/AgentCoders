@@ -14,6 +14,9 @@ import {
   tenantManagerConfigSchema,
   getDb,
   tenants,
+  agents,
+  dwiRecords,
+  claudeSessions,
   auditEvents,
   telemetryRecords,
   failurePatterns,
@@ -23,11 +26,13 @@ import {
   enhancementRuns,
   insurancePolicies,
 } from '@agentcoders/shared';
+import { sql } from 'drizzle-orm';
 import type { TenantVertical, VerticalType } from '@agentcoders/shared';
 
 import { OnboardingService, type SignupParams } from './onboarding.js';
 import { QuotaManager } from './quota-manager.js';
 import { extractBearerToken, validateBearerToken } from './auth.js';
+import { handleSseConnection } from './sse-handler.js';
 
 // ---------------------------------------------------------------------------
 // Bootstrap
@@ -169,6 +174,24 @@ function matchRoute(
   const insuranceMatch = /^\/api\/tenants\/([a-f0-9-]{36})\/insurance$/.exec(pathname);
   if (insuranceMatch && method === 'GET') {
     return { route: 'get-insurance', tenantId: insuranceMatch[1] };
+  }
+
+  // GET /api/tenants/:id/agents
+  const agentsMatch = /^\/api\/tenants\/([a-f0-9-]{36})\/agents$/.exec(pathname);
+  if (agentsMatch && method === 'GET') {
+    return { route: 'get-agents', tenantId: agentsMatch[1] };
+  }
+
+  // GET /api/tenants/:id/dwi-summary
+  const dwiSummaryMatch = /^\/api\/tenants\/([a-f0-9-]{36})\/dwi-summary$/.exec(pathname);
+  if (dwiSummaryMatch && method === 'GET') {
+    return { route: 'get-dwi-summary', tenantId: dwiSummaryMatch[1] };
+  }
+
+  // GET /api/tenants/:id/events (SSE)
+  const eventsMatch = /^\/api\/tenants\/([a-f0-9-]{36})\/events$/.exec(pathname);
+  if (eventsMatch && method === 'GET') {
+    return { route: 'get-events-sse', tenantId: eventsMatch[1] };
   }
 
   return null;
@@ -377,6 +400,41 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     case 'get-insurance': {
       const rows = await db.select().from(insurancePolicies).where(eq(insurancePolicies.tenantId, matched.tenantId!));
       jsonResponse(res, 200, rows);
+      return;
+    }
+
+    // ----- SSE Events Stream -----
+    case 'get-events-sse': {
+      handleSseConnection(req, res, matched.tenantId!, config.REDIS_URL);
+      return;
+    }
+
+    // ----- Agents -----
+    case 'get-agents': {
+      const rows = await db.select().from(agents).where(eq(agents.tenantId, matched.tenantId!));
+      jsonResponse(res, 200, rows);
+      return;
+    }
+
+    // ----- DWI Summary (for ValueDashboard) -----
+    case 'get-dwi-summary': {
+      const allDwis = await db.select().from(dwiRecords).where(eq(dwiRecords.tenantId, matched.tenantId!));
+      const sessions = await db.select().from(claudeSessions).where(eq(claudeSessions.tenantId, matched.tenantId!));
+
+      const delivered = allDwis.filter(d => d.isBillable).length;
+      const merged = allDwis.filter(d => d.prMerged).length;
+      const totalCost = sessions.reduce((sum, s) => sum + (s.estimatedCostUsd ?? 0), 0);
+      const totalRevenue = allDwis.filter(d => d.isBillable).reduce((sum, d) => sum + d.priceUsd, 0);
+      const avgDurationMs = allDwis.filter(d => d.durationMs).reduce((sum, d) => sum + (d.durationMs ?? 0), 0) / (delivered || 1);
+
+      jsonResponse(res, 200, {
+        workItemsDelivered: delivered,
+        workItemsTotal: allDwis.length,
+        prsMerged: merged,
+        cycleTimeHours: Math.round(avgDurationMs / 3_600_000 * 10) / 10,
+        totalCostUsd: Math.round(totalCost * 100) / 100,
+        totalRevenueUsd: Math.round(totalRevenue * 100) / 100,
+      });
       return;
     }
 

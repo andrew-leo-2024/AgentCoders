@@ -10,5 +10,7 @@ resources:
   - telegram-gateway.yaml
   - billing-service.yaml
   - tenant-manager.yaml
+  - dashboard.yaml
+  - ingress.yaml
   - network-policies.yaml
   - rbac.yaml

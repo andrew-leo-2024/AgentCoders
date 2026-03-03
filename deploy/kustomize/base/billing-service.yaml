@@ -13,9 +13,14 @@ spec:
       labels:
         app: billing-service
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
         - name: billing
           image: agentcoders/billing-service:latest
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 5"]
           ports:
             - containerPort: 8081
           env:

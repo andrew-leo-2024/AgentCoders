@@ -128,6 +128,27 @@ export interface InsurancePolicy {
   claims: InsuranceClaim[];
 }
 
+export interface AgentInfo {
+  id: string;
+  tenantId: string;
+  agentId: string;
+  vertical: string;
+  role: string;
+  status: string;
+  currentWorkItemId: number | null;
+  workItemsCompletedToday: number;
+  lastHeartbeatAt: string | null;
+}
+
+export interface DwiSummary {
+  workItemsDelivered: number;
+  workItemsTotal: number;
+  prsMerged: number;
+  cycleTimeHours: number;
+  totalCostUsd: number;
+  totalRevenueUsd: number;
+}
+
 // --- Fetch helper ---
 
 async function fetchJson<T>(path: string): Promise<T> {
@@ -139,6 +160,10 @@ async function fetchJson<T>(path: string): Promise<T> {
 // --- API client ---
 
 export const api = {
+  getAgents: (tenantId: string) =>
+    fetchJson<AgentInfo[]>(`/tenants/${tenantId}/agents`),
+  getDwiSummary: (tenantId: string) =>
+    fetchJson<DwiSummary>(`/tenants/${tenantId}/dwi-summary`),
   getAuditEvents: (tenantId: string) =>
     fetchJson<AuditEvent[]>(`/tenants/${tenantId}/audit`),
   getTelemetry: (tenantId: string) =>
@@ -155,4 +180,14 @@ export const api = {
     fetchJson<EnhancementRun[]>(`/tenants/${tenantId}/enhancements`),
   getInsurancePolicies: (tenantId: string) =>
     fetchJson<InsurancePolicy[]>(`/tenants/${tenantId}/insurance`),
+  subscribeToEvents: (tenantId: string, onEvent: (type: string, data: unknown) => void): EventSource => {
+    const source = new EventSource(`${BASE_URL}/tenants/${tenantId}/events`);
+    source.onmessage = (e) => { onEvent('message', JSON.parse(e.data)); };
+    source.addEventListener('agent-heartbeat', (e) => { onEvent('agent-heartbeat', JSON.parse((e as MessageEvent).data)); });
+    source.addEventListener('governance-audit', (e) => { onEvent('governance-audit', JSON.parse((e as MessageEvent).data)); });
+    source.addEventListener('governance-failure-alert', (e) => { onEvent('governance-failure-alert', JSON.parse((e as MessageEvent).data)); });
+    source.addEventListener('dwi-work-item-created', (e) => { onEvent('dwi-work-item-created', JSON.parse((e as MessageEvent).data)); });
+    source.addEventListener('pr-merged', (e) => { onEvent('pr-merged', JSON.parse((e as MessageEvent).data)); });
+    return source;
+  },
 };

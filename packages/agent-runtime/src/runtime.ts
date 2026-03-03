@@ -1,4 +1,4 @@
-import { createLogger, RedisChannels, type ScmProvider } from '@agentcoders/shared';
+import { createLogger, RedisChannels, type ScmProvider, type TelegramDecisionMessage } from '@agentcoders/shared';
 import { createScmAdapter } from '@agentcoders/scm-adapters';
 import { getConfig } from './config-loader.js';
 import { RedisBus } from './redis-bus.js';
@@ -82,6 +82,30 @@ export class AgentRuntime {
     const telegramChannel = RedisChannels.telegramInbound(config.TENANT_ID, config.AGENT_VERTICAL);
     await redisBus.subscribe(telegramChannel, (msg) => {
       logger.info({ channel: telegramChannel, type: msg.type }, 'Received Telegram message');
+    });
+
+    // Subscribe to Telegram approval/reject/defer decisions
+    const decisionChannel = RedisChannels.telegramDecision(config.TENANT_ID);
+    await redisBus.subscribe(decisionChannel, (msg) => {
+      if (msg.type !== 'telegram-decision') return;
+      const decision = msg as TelegramDecisionMessage;
+      logger.info({ action: decision.action, itemId: decision.itemId }, 'Telegram decision received');
+
+      switch (decision.action) {
+        case 'approve':
+          // Resume blocked work — next poll iteration will pick it up
+          logger.info({ itemId: decision.itemId }, 'Work item approved — will resume on next poll');
+          break;
+        case 'reject':
+          // Mark escalation as rejected and move on
+          logger.warn({ itemId: decision.itemId }, 'Work item rejected by human');
+          redisBus.publishHeartbeat(config.AGENT_ID, 'idle').catch(() => {});
+          break;
+        case 'defer':
+          // No action — keep escalation state, human will revisit
+          logger.info({ itemId: decision.itemId }, 'Work item deferred');
+          break;
+      }
     });
 
     healthServer.updateState({

@@ -1,37 +1,31 @@
 import React, { useEffect, useState } from 'react';
+import { api, type DwiSummary } from '../api/client';
 
-interface DashboardMetrics {
-  workItemsDelivered: number;
-  workItemsTotal: number;
-  prsMerged: number;
-  cycleTimeHours: number;
-  humanBaselineDays: number;
-  totalCostUsd: number;
-  humanEquivalentUsd: number;
-  savingsPercent: number;
-}
+const TENANT_ID = 'demo-tenant';
+const HUMAN_BASELINE_DAYS = 3.5;
+const HUMAN_HOURLY_RATE = 75;
 
 export function ValueDashboard() {
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [metrics, setMetrics] = useState<DwiSummary | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Placeholder — will fetch from API
-    setMetrics({
-      workItemsDelivered: 47,
-      workItemsTotal: 52,
-      prsMerged: 43,
-      cycleTimeHours: 4.2,
-      humanBaselineDays: 3.5,
-      totalCostUsd: 2100,
-      humanEquivalentUsd: 38400,
-      savingsPercent: 94.5,
-    });
+    api.getDwiSummary(TENANT_ID).then(setMetrics).catch((err: Error) => setError(err.message));
   }, []);
 
+  if (error) return <div style={{ color: 'red' }}>Error: {error}</div>;
   if (!metrics) return <div>Loading...</div>;
 
-  const deliveryRate = ((metrics.workItemsDelivered / metrics.workItemsTotal) * 100).toFixed(0);
-  const speedMultiplier = ((metrics.humanBaselineDays * 24) / metrics.cycleTimeHours).toFixed(0);
+  const deliveryRate = metrics.workItemsTotal > 0
+    ? ((metrics.workItemsDelivered / metrics.workItemsTotal) * 100).toFixed(0)
+    : '0';
+  const speedMultiplier = metrics.cycleTimeHours > 0
+    ? ((HUMAN_BASELINE_DAYS * 24) / metrics.cycleTimeHours).toFixed(0)
+    : '-';
+  const humanEquivalentUsd = metrics.workItemsDelivered * HUMAN_BASELINE_DAYS * 8 * HUMAN_HOURLY_RATE;
+  const savingsPercent = humanEquivalentUsd > 0
+    ? (((humanEquivalentUsd - metrics.totalCostUsd) / humanEquivalentUsd) * 100).toFixed(1)
+    : '0';
 
   return (
     <div>
@@ -49,20 +43,20 @@ export function ValueDashboard() {
         <MetricCard
           title="Cycle Time"
           value={`${metrics.cycleTimeHours}hrs`}
-          subtitle={`vs ${metrics.humanBaselineDays} days human = ${speedMultiplier}x faster`}
+          subtitle={`vs ${HUMAN_BASELINE_DAYS} days human = ${speedMultiplier}x faster`}
         />
         <MetricCard
           title="Total Cost"
           value={`$${metrics.totalCostUsd.toLocaleString()}`}
         />
         <MetricCard
-          title="Human Equivalent"
-          value={`$${metrics.humanEquivalentUsd.toLocaleString()}`}
+          title="Revenue"
+          value={`$${metrics.totalRevenueUsd.toLocaleString()}`}
         />
         <MetricCard
-          title="Savings"
-          value={`${metrics.savingsPercent}%`}
-          subtitle={`$${(metrics.humanEquivalentUsd - metrics.totalCostUsd).toLocaleString()} saved`}
+          title="Savings vs Human"
+          value={`${savingsPercent}%`}
+          subtitle={`$${(humanEquivalentUsd - metrics.totalCostUsd).toLocaleString()} saved`}
         />
       </div>
     </div>

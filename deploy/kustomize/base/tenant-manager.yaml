@@ -14,9 +14,24 @@ spec:
         app: tenant-manager
     spec:
       serviceAccountName: tenant-manager
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        - name: db-migrate
+          image: agentcoders/tenant-manager:latest
+          command: ["node", "node_modules/@agentcoders/shared/dist/db/run-migrate-cli.js"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: connection-string
       containers:
         - name: tenant-manager
           image: agentcoders/tenant-manager:latest
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 5"]
           ports:
             - containerPort: 8082
           env:
