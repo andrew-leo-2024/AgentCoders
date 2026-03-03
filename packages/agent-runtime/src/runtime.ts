@@ -1,7 +1,7 @@
-import { createLogger, getDb, RedisChannels } from '@agentcoders/shared';
+import { createLogger, RedisChannels, type ScmProvider } from '@agentcoders/shared';
+import { createScmAdapter } from '@agentcoders/scm-adapters';
 import { getConfig } from './config-loader.js';
 import { RedisBus } from './redis-bus.js';
-import { AdoClient } from './ado-client.js';
 import { GitClient } from './git-client.js';
 import { ClaudeCodeExecutor } from './claude-code-executor.js';
 import { PrManager } from './pr-manager.js';
@@ -10,30 +10,55 @@ import { HealthServer } from './health.js';
 import { Watchdog } from './watchdog.js';
 import { Lifecycle } from './lifecycle.js';
 import { PollLoop } from './poll-loop.js';
+import { PrStatusPoller } from './pr-status-poller.js';
 import { FreshContextExecutor } from './fresh-context-executor.js';
 import { StateTracker } from './state-tracker.js';
+
+function buildScmProvider(config: ReturnType<typeof getConfig>): ScmProvider {
+  if (config.SCM_PROVIDER === 'github') {
+    if (!config.GITHUB_TOKEN || !config.GITHUB_OWNER || !config.GITHUB_REPO) {
+      throw new Error('GitHub SCM requires GITHUB_TOKEN, GITHUB_OWNER, and GITHUB_REPO');
+    }
+    return createScmAdapter({
+      type: 'github',
+      token: config.GITHUB_TOKEN,
+      owner: config.GITHUB_OWNER,
+      repo: config.GITHUB_REPO,
+    });
+  }
+
+  if (!config.ADO_ORG_URL || !config.ADO_PROJECT || !config.ADO_PAT) {
+    throw new Error('ADO SCM requires ADO_ORG_URL, ADO_PROJECT, and ADO_PAT');
+  }
+  return createScmAdapter({
+    type: 'ado',
+    orgUrl: config.ADO_ORG_URL,
+    project: config.ADO_PROJECT,
+    pat: config.ADO_PAT,
+  });
+}
 
 export class AgentRuntime {
   private pollLoop: PollLoop | null = null;
   private lifecycle: Lifecycle | null = null;
   private freshContextExecutor: FreshContextExecutor | null = null;
   private stateTracker: StateTracker | null = null;
+  private prStatusPoller: PrStatusPoller | null = null;
 
   async start(): Promise<void> {
     const config = getConfig();
     const logger = createLogger(`agent:${config.AGENT_ID}`);
 
-    logger.info({ agentId: config.AGENT_ID, vertical: config.AGENT_VERTICAL }, 'Agent runtime starting');
+    logger.info({ agentId: config.AGENT_ID, vertical: config.AGENT_VERTICAL, scm: config.SCM_PROVIDER }, 'Agent runtime starting');
 
     // Initialize components
-    const db = getDb(config.DATABASE_URL);
+    const db = (await import('@agentcoders/shared')).getDb(config.DATABASE_URL);
     const redisBus = new RedisBus(config.REDIS_URL, config.TENANT_ID, logger);
-    const adoClient = new AdoClient(config.ADO_ORG_URL, config.ADO_PROJECT, config.ADO_PAT, logger);
+    const scmProvider = buildScmProvider(config);
     const workDir = process.cwd();
     const gitClient = new GitClient(workDir, logger);
     const executor = new ClaudeCodeExecutor(logger);
-    const repositoryId = config.ADO_REPOSITORY_ID ?? config.ADO_PROJECT;
-    const prManager = new PrManager(adoClient, gitClient, repositoryId, logger);
+    const prManager = new PrManager(scmProvider, gitClient, logger);
     const costTracker = new CostTracker(db, logger);
     const healthServer = new HealthServer(config.AGENT_ID, logger);
     const watchdog = new Watchdog(executor, logger);
@@ -64,6 +89,10 @@ export class AgentRuntime {
       pollIntervalMs: config.POLL_INTERVAL_MS,
     });
 
+    // Start PR status poller
+    this.prStatusPoller = new PrStatusPoller(scmProvider, redisBus, config.AGENT_ID, logger);
+    this.prStatusPoller.start();
+
     // Start poll loop
     this.pollLoop = new PollLoop(
       {
@@ -78,12 +107,13 @@ export class AgentRuntime {
         dailyBudgetUsd: config.DAILY_BUDGET_USD,
         monthlyBudgetUsd: config.MONTHLY_BUDGET_USD,
         workDir,
+        scmProvider: config.SCM_PROVIDER,
         adoProject: config.ADO_PROJECT,
-        repositoryId,
+        repositoryId: config.ADO_REPOSITORY_ID ?? config.ADO_PROJECT,
         triageModel: config.CLAUDE_MODEL_TRIAGE,
         codingModel: config.CLAUDE_MODEL_CODING,
       },
-      adoClient,
+      scmProvider,
       gitClient,
       executor,
       prManager,
@@ -93,6 +123,7 @@ export class AgentRuntime {
       watchdog,
       this.lifecycle,
       logger,
+      this.prStatusPoller,
     );
 
     this.pollLoop.start();

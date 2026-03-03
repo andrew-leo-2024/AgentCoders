@@ -91,6 +91,9 @@ importers:
 
   packages/agent-runtime:
     dependencies:
+      '@agentcoders/scm-adapters':
+        specifier: workspace:*
+        version: link:../scm-adapters
       '@agentcoders/shared':
         specifier: workspace:*
         version: link:../shared

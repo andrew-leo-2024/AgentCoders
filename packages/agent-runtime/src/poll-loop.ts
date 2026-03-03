@@ -1,13 +1,12 @@
 import {
   type Logger,
   type AgentStatus,
-  AdoFields,
-  WiStates,
+  type ScmProvider,
+  type ScmProviderType,
   AgentTags,
   COMPLEXITY_TIMEOUTS_MS,
   type ComplexityTier,
 } from '@agentcoders/shared';
-import type { AdoClient } from './ado-client.js';
 import type { GitClient } from './git-client.js';
 import type { ClaudeCodeExecutor, ClaudeCodeResult } from './claude-code-executor.js';
 import type { PrManager } from './pr-manager.js';
@@ -16,6 +15,7 @@ import type { CostTracker } from './cost-tracker.js';
 import type { HealthServer } from './health.js';
 import type { Watchdog } from './watchdog.js';
 import type { Lifecycle } from './lifecycle.js';
+import type { PrStatusPoller } from './pr-status-poller.js';
 
 export interface PollLoopConfig {
   agentId: string;
@@ -29,8 +29,9 @@ export interface PollLoopConfig {
   dailyBudgetUsd: number;
   monthlyBudgetUsd: number;
   workDir: string;
-  adoProject: string;
-  repositoryId: string;
+  scmProvider: ScmProviderType;
+  adoProject?: string;
+  repositoryId?: string;
   triageModel: string;
   codingModel: string;
 }
@@ -42,7 +43,7 @@ export class PollLoop {
 
   constructor(
     private readonly config: PollLoopConfig,
-    private readonly ado: AdoClient,
+    private readonly scm: ScmProvider,
     private readonly git: GitClient,
     private readonly executor: ClaudeCodeExecutor,
     private readonly prManager: PrManager,
@@ -52,6 +53,7 @@ export class PollLoop {
     private readonly watchdog: Watchdog,
     private readonly lifecycle: Lifecycle,
     private readonly logger: Logger,
+    private readonly prStatusPoller?: PrStatusPoller,
   ) {}
 
   start(): void {
@@ -113,28 +115,19 @@ export class PollLoop {
         return;
       }
 
-      // Query for unclaimed work items
-      const wiql = `
-        SELECT [System.Id] FROM WorkItems
-        WHERE [System.TeamProject] = '${this.config.adoProject}'
-          AND [System.State] = '${WiStates.New}'
-          AND [System.Tags] NOT CONTAINS '${AgentTags.AiClaimed}'
-          AND [System.AreaPath] UNDER '${this.config.adoProject}\\${this.config.vertical}'
-        ORDER BY [Microsoft.VSTS.Common.Priority] ASC, [System.CreatedDate] ASC
-      `;
-
-      const queryResult = await this.ado.queryWorkItems(wiql);
-      if (queryResult.workItems.length === 0) {
+      // Query for unclaimed work items (SCM-agnostic)
+      const query = this.buildWorkItemQuery();
+      const workItems = await this.scm.queryWorkItems(query);
+      if (workItems.length === 0) {
         this.logger.debug('No unclaimed work items found');
         this.setStatus('idle');
         return;
       }
 
       // Get first work item details
-      const wiRef = queryResult.workItems[0]!;
-      const wi = await this.ado.getWorkItem(wiRef.id, 'all');
-      const title = wi.fields[AdoFields.Title] as string;
-      const description = (wi.fields[AdoFields.Description] as string) ?? '';
+      const wi = workItems[0]!;
+      const title = wi.title;
+      const description = wi.description ?? '';
 
       this.logger.info({ workItemId: wi.id, title }, 'Found work item — evaluating');
 
@@ -214,13 +207,13 @@ Respond ONLY with JSON:
     this.setStatus('working');
     this.logger.info({ workItemId, title, complexityTier }, 'Claiming work item');
 
-    await this.ado.updateWorkItem(workItemId, [
-      { op: 'add', path: `/fields/${AdoFields.State}`, value: WiStates.Active },
-      { op: 'add', path: `/fields/${AdoFields.Tags}`, value: AgentTags.AiClaimed },
-      { op: 'add', path: `/fields/${AdoFields.AssignedTo}`, value: this.config.agentId },
-    ]);
+    await this.scm.updateWorkItem(workItemId, {
+      state: 'Active',
+      tags: [AgentTags.AiClaimed],
+      assignedTo: this.config.agentId,
+    });
 
-    await this.ado.addComment(workItemId,
+    await this.scm.addComment?.(workItemId,
       `Claimed by AI agent \`${this.config.agentId}\` (${this.config.vertical}). Estimated complexity: ${complexityTier}`,
     );
 
@@ -300,11 +293,18 @@ Respond ONLY with JSON:
 
       this.healthServer.metrics.prsCreated.inc();
 
+      // Publish DWI events for billing
+      await this.redisBus.publishDwiWorkItemCreated(this.config.agentId, workItemId, title);
+      await this.redisBus.publishPrLinked(this.config.agentId, workItemId, pr.prId, pr.url);
+
+      // Track PR for CI/review/merge lifecycle events
+      this.prStatusPoller?.trackPr(workItemId, pr.prId);
+
       // 6. Update work item
-      await this.ado.updateWorkItem(workItemId, [
-        { op: 'add', path: `/fields/${AdoFields.State}`, value: WiStates.Resolved },
-        { op: 'add', path: `/fields/${AdoFields.Tags}`, value: `${AgentTags.AiClaimed},${AgentTags.AiCompleted}` },
-      ]);
+      await this.scm.updateWorkItem(workItemId, {
+        state: 'Resolved',
+        tags: [AgentTags.AiClaimed, AgentTags.AiCompleted],
+      });
 
       await this.redisBus.publishProgress(
         this.config.agentId, workItemId, 'done',
@@ -332,9 +332,9 @@ Respond ONLY with JSON:
       );
 
       // Tag work item as blocked
-      await this.ado.updateWorkItem(workItemId, [
-        { op: 'add', path: `/fields/${AdoFields.Tags}`, value: `${AgentTags.AiClaimed},${AgentTags.AiBlocked}` },
-      ]).catch(() => {}); // Best effort
+      await this.scm.updateWorkItem(workItemId, {
+        tags: [AgentTags.AiClaimed, AgentTags.AiBlocked],
+      }).catch(() => {}); // Best effort
     } finally {
       // Return to main branch
       if (branch) {
@@ -342,6 +342,22 @@ Respond ONLY with JSON:
       }
       this.setStatus('idle');
     }
+  }
+
+  private buildWorkItemQuery(): string {
+    if (this.config.scmProvider === 'github') {
+      // GitHub search query: open issues without ai-claimed label
+      return `is:issue is:open -label:${AgentTags.AiClaimed} label:agent-ready`;
+    }
+    // ADO WIQL query
+    return `
+      SELECT [System.Id] FROM WorkItems
+      WHERE [System.TeamProject] = '${this.config.adoProject}'
+        AND [System.State] = 'New'
+        AND [System.Tags] NOT CONTAINS '${AgentTags.AiClaimed}'
+        AND [System.AreaPath] UNDER '${this.config.adoProject}\\${this.config.vertical}'
+      ORDER BY [Microsoft.VSTS.Common.Priority] ASC, [System.CreatedDate] ASC
+    `;
   }
 
   private buildCodingPrompt(workItemId: number, title: string, description: string): string {

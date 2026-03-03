@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@agentcoders/shared": "workspace:*",
+    "@agentcoders/scm-adapters": "workspace:*",
     "drizzle-orm": "^0.38.0",
     "ioredis": "^5.4.0",
     "prom-client": "^15.1.0"

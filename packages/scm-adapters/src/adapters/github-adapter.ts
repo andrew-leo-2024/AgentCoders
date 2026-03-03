@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import type { ScmProvider, ScmWorkItem, ScmPullRequest } from '@agentcoders/shared';
+import type { ScmProvider, ScmWorkItem, ScmPullRequest, CiStatus, PrReviewStatus } from '@agentcoders/shared';
 
 export class GitHubScmAdapter implements ScmProvider {
   public readonly type = 'github' as const;
@@ -105,6 +105,70 @@ export class GitHubScmAdapter implements ScmProvider {
       pull_number: prId,
       merge_method: 'squash',
     });
+  }
+
+  async addComment(id: number, text: string): Promise<void> {
+    await this.octokit.issues.createComment({
+      owner: this.owner,
+      repo: this.repo,
+      issue_number: id,
+      body: text,
+    });
+  }
+
+  async getCheckRunStatus(prId: number): Promise<CiStatus> {
+    // Get the PR to find head SHA
+    const { data: pr } = await this.octokit.pulls.get({
+      owner: this.owner,
+      repo: this.repo,
+      pull_number: prId,
+    });
+
+    const { data: checkRuns } = await this.octokit.checks.listForRef({
+      owner: this.owner,
+      repo: this.repo,
+      ref: pr.head.sha,
+    });
+
+    const checks = checkRuns.check_runs.map((run) => ({
+      name: run.name,
+      status: run.status as 'queued' | 'in_progress' | 'completed',
+      conclusion: run.conclusion as CiStatus['checks'][number]['conclusion'],
+    }));
+
+    // Determine aggregate state
+    const allCompleted = checks.length > 0 && checks.every((c) => c.status === 'completed');
+    const anyFailed = checks.some(
+      (c) => c.conclusion === 'failure' || c.conclusion === 'timed_out' || c.conclusion === 'cancelled',
+    );
+
+    let state: CiStatus['state'] = 'pending';
+    if (allCompleted) {
+      state = anyFailed ? 'failure' : 'success';
+    }
+
+    return { state, checks };
+  }
+
+  async getPrReviewStatus(prId: number): Promise<PrReviewStatus> {
+    const { data: reviews } = await this.octokit.pulls.listReviews({
+      owner: this.owner,
+      repo: this.repo,
+      pull_number: prId,
+    });
+
+    // De-duplicate: keep latest review per reviewer
+    const byReviewer = new Map<string, PrReviewStatus['reviewers'][number]>();
+    for (const review of reviews) {
+      const login = review.user?.login ?? 'unknown';
+      const state = review.state.toLowerCase() as PrReviewStatus['reviewers'][number]['state'];
+      byReviewer.set(login, { login, state });
+    }
+
+    const reviewers = [...byReviewer.values()];
+    const approved = reviewers.length > 0 && reviewers.some((r) => r.state === 'approved');
+
+    return { approved, reviewers };
   }
 
   async getPr(prId: number): Promise<ScmPullRequest> {

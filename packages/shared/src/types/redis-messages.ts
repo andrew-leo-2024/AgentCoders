@@ -14,7 +14,13 @@ export type RedisMessage =
   | CrossVerticalRequestMessage
   | CrossVerticalCompletedMessage
   | HeartbeatMessage
-  | BudgetAlertMessage;
+  | BudgetAlertMessage
+  | DwiWorkItemCreatedMessage
+  | DwiPrLinkedMessage
+  | DwiCiCompletedMessage
+  | DwiPrApprovedMessage
+  | DwiPrMergedMessage
+  | DwiWorkItemClosedMessage;
 
 export interface EscalationMessage {
   type: 'escalation';
@@ -140,5 +146,61 @@ export interface BudgetAlertMessage {
   alertType: 'warning-80pct' | 'exceeded' | 'session-limit';
   dailySpentUsd: number;
   dailyLimitUsd: number;
+  timestamp: string;
+}
+
+// DWI lifecycle messages — published by agent-runtime, consumed by billing-service
+export interface DwiWorkItemCreatedMessage {
+  type: 'dwi:work-item-created';
+  agentId: string;
+  tenantId: string;
+  workItemId: number;
+  title: string;
+  timestamp: string;
+}
+
+export interface DwiPrLinkedMessage {
+  type: 'dwi:pr-linked';
+  agentId: string;
+  tenantId: string;
+  workItemId: number;
+  prId: number;
+  prUrl: string;
+  timestamp: string;
+}
+
+export interface DwiCiCompletedMessage {
+  type: 'dwi:ci-completed';
+  agentId: string;
+  tenantId: string;
+  workItemId: number;
+  prId: number;
+  passed: boolean;
+  timestamp: string;
+}
+
+export interface DwiPrApprovedMessage {
+  type: 'dwi:pr-approved';
+  agentId: string;
+  tenantId: string;
+  workItemId: number;
+  prId: number;
+  timestamp: string;
+}
+
+export interface DwiPrMergedMessage {
+  type: 'dwi:pr-merged';
+  agentId: string;
+  tenantId: string;
+  workItemId: number;
+  prId: number;
+  timestamp: string;
+}
+
+export interface DwiWorkItemClosedMessage {
+  type: 'dwi:work-item-closed';
+  agentId: string;
+  tenantId: string;
+  workItemId: number;
   timestamp: string;
 }

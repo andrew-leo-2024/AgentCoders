@@ -16,4 +16,11 @@ export const RedisChannels = {
   enhancement: (tenantId: string, agentId: string) => `${tenantId}:enhancement:${agentId}`,
   memorySync: (tenantId: string) => `${tenantId}:memory:sync`,
   failureAlert: (tenantId: string) => `${tenantId}:governance:failure-alert`,
+  // DWI lifecycle channels — consumed by billing-service
+  dwiWorkItemCreated: (tenantId: string) => `${tenantId}:dwi:work-item-created`,
+  prLinked: (tenantId: string) => `${tenantId}:pr:linked`,
+  ciCompleted: (tenantId: string) => `${tenantId}:ci:completed`,
+  prApproved: (tenantId: string) => `${tenantId}:pr:approved`,
+  prMerged: (tenantId: string) => `${tenantId}:pr:merged`,
+  dwiWorkItemClosed: (tenantId: string) => `${tenantId}:dwi:work-item-closed`,
 } as const;

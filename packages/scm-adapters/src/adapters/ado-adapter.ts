@@ -202,6 +202,16 @@ export class AdoScmAdapter implements ScmProvider {
     );
   }
 
+  async addComment(id: number, text: string): Promise<void> {
+    await this.request(
+      `/_apis/wit/workitems/${id}/comments?api-version=7.1-preview.4`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ text }),
+      },
+    );
+  }
+
   async getPr(prId: number): Promise<ScmPullRequest> {
     const repos = await this.request<{
       value: Array<{ id: string }>;

@@ -22,6 +22,27 @@ export interface ScmPullRequest {
   url: string;
 }
 
+export interface CiCheck {
+  name: string;
+  status: 'queued' | 'in_progress' | 'completed';
+  conclusion: 'success' | 'failure' | 'neutral' | 'cancelled' | 'timed_out' | 'action_required' | null;
+}
+
+export interface CiStatus {
+  state: 'pending' | 'success' | 'failure';
+  checks: CiCheck[];
+}
+
+export interface PrReviewer {
+  login: string;
+  state: 'approved' | 'changes_requested' | 'commented' | 'dismissed' | 'pending';
+}
+
+export interface PrReviewStatus {
+  approved: boolean;
+  reviewers: PrReviewer[];
+}
+
 export interface ScmProvider {
   type: ScmProviderType;
   queryWorkItems(query: string): Promise<ScmWorkItem[]>;
@@ -30,6 +51,9 @@ export interface ScmProvider {
   createPr(title: string, sourceBranch: string, targetBranch: string, workItemIds: number[]): Promise<ScmPullRequest>;
   mergePr(prId: number): Promise<void>;
   getPr(prId: number): Promise<ScmPullRequest>;
+  addComment?(id: number, text: string): Promise<void>;
+  getCheckRunStatus?(prId: number): Promise<CiStatus>;
+  getPrReviewStatus?(prId: number): Promise<PrReviewStatus>;
 }
 
 export interface ScmProviderConfig {

@@ -102,6 +102,75 @@ export class RedisBus {
     } as unknown as RedisMessage);
   }
 
+  // DWI lifecycle event publishers — consumed by billing-service
+
+  async publishDwiWorkItemCreated(agentId: string, workItemId: number, title: string): Promise<void> {
+    await this.publish(RedisChannels.dwiWorkItemCreated(this.tenantId), {
+      type: 'dwi:work-item-created',
+      agentId,
+      tenantId: this.tenantId,
+      workItemId,
+      title,
+      timestamp: new Date().toISOString(),
+    } as unknown as RedisMessage);
+  }
+
+  async publishPrLinked(agentId: string, workItemId: number, prId: number, prUrl: string): Promise<void> {
+    await this.publish(RedisChannels.prLinked(this.tenantId), {
+      type: 'dwi:pr-linked',
+      agentId,
+      tenantId: this.tenantId,
+      workItemId,
+      prId,
+      prUrl,
+      timestamp: new Date().toISOString(),
+    } as unknown as RedisMessage);
+  }
+
+  async publishCiCompleted(agentId: string, workItemId: number, prId: number, passed: boolean): Promise<void> {
+    await this.publish(RedisChannels.ciCompleted(this.tenantId), {
+      type: 'dwi:ci-completed',
+      agentId,
+      tenantId: this.tenantId,
+      workItemId,
+      prId,
+      passed,
+      timestamp: new Date().toISOString(),
+    } as unknown as RedisMessage);
+  }
+
+  async publishPrApproved(agentId: string, workItemId: number, prId: number): Promise<void> {
+    await this.publish(RedisChannels.prApproved(this.tenantId), {
+      type: 'dwi:pr-approved',
+      agentId,
+      tenantId: this.tenantId,
+      workItemId,
+      prId,
+      timestamp: new Date().toISOString(),
+    } as unknown as RedisMessage);
+  }
+
+  async publishPrMerged(agentId: string, workItemId: number, prId: number): Promise<void> {
+    await this.publish(RedisChannels.prMerged(this.tenantId), {
+      type: 'dwi:pr-merged',
+      agentId,
+      tenantId: this.tenantId,
+      workItemId,
+      prId,
+      timestamp: new Date().toISOString(),
+    } as unknown as RedisMessage);
+  }
+
+  async publishDwiWorkItemClosed(agentId: string, workItemId: number): Promise<void> {
+    await this.publish(RedisChannels.dwiWorkItemClosed(this.tenantId), {
+      type: 'dwi:work-item-closed',
+      agentId,
+      tenantId: this.tenantId,
+      workItemId,
+      timestamp: new Date().toISOString(),
+    } as unknown as RedisMessage);
+  }
+
   async close(): Promise<void> {
     await this.sub.unsubscribe();
     this.sub.disconnect();
