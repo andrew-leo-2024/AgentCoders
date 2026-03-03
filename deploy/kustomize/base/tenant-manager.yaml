@@ -12,6 +12,7 @@ spec:
     metadata:
       labels:
         app: tenant-manager
+        app.kubernetes.io/part-of: agentcoders
     spec:
       serviceAccountName: tenant-manager
       terminationGracePeriodSeconds: 30
@@ -33,7 +34,8 @@ spec:
               exec:
                 command: ["/bin/sh", "-c", "sleep 5"]
           ports:
-            - containerPort: 8082
+            - name: health
+              containerPort: 8082
           env:
             - name: REDIS_URL
               value: redis://redis.agent-shared.svc.cluster.local:6379
@@ -77,7 +79,8 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: 8082
+    - name: http
+      port: 8082
       targetPort: 8082
   selector:
     app: tenant-manager

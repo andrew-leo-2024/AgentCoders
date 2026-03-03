@@ -14,7 +14,7 @@ spec:
         app: jarvis-runtime
         app.kubernetes.io/part-of: agentcoders
     spec:
-      serviceAccountName: tenant-manager
+      serviceAccountName: jarvis-runtime
       terminationGracePeriodSeconds: 60
       containers:
         - name: jarvis
@@ -95,6 +95,43 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jarvis-runtime
+  namespace: agent-shared
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: jarvis-runtime
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces", "pods", "configmaps"]
+    verbs: ["get", "list", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["resourcequotas"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: jarvis-runtime
+subjects:
+  - kind: ServiceAccount
+    name: jarvis-runtime
+    namespace: agent-shared
+roleRef:
+  kind: ClusterRole
+  name: jarvis-runtime
+  apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: v1
 kind: ConfigMap

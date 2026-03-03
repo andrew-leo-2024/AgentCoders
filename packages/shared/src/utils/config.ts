@@ -35,6 +35,7 @@ export const agentConfigSchema = baseConfigSchema.extend({
 export const telegramConfigSchema = baseConfigSchema.extend({
   TELEGRAM_BOT_TOKEN: z.string(),
   TELEGRAM_OWNER_CHAT_ID: z.string(),
+  HEALTH_PORT: z.coerce.number().int().default(8083),
 });
 
 export const billingConfigSchema = baseConfigSchema.extend({

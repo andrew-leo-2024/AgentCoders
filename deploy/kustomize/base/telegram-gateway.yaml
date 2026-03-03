@@ -12,6 +12,7 @@ spec:
     metadata:
       labels:
         app: telegram-gateway
+        app.kubernetes.io/part-of: agentcoders
     spec:
       terminationGracePeriodSeconds: 30
       containers:
@@ -21,6 +22,9 @@ spec:
             preStop:
               exec:
                 command: ["/bin/sh", "-c", "sleep 5"]
+          ports:
+            - name: health
+              containerPort: 8083
           env:
             - name: REDIS_URL
               value: redis://redis.agent-shared.svc.cluster.local:6379
@@ -39,6 +43,18 @@ spec:
                 secretKeyRef:
                   name: telegram-credentials
                   key: owner-chat-id
+            - name: HEALTH_PORT
+              value: "8083"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8083
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8083
+            periodSeconds: 15
           resources:
             requests:
               cpu: 100m

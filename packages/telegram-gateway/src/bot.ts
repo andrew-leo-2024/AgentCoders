@@ -1,5 +1,6 @@
 import { Telegraf } from 'telegraf';
 import type { Context } from 'telegraf';
+import { createServer, type Server } from 'node:http';
 import { Redis } from 'ioredis';
 import {
   loadConfig,
@@ -54,6 +55,28 @@ async function main(): Promise<void> {
   // Start Redis bridge
   await bridge.start();
 
+  // Health server
+  let healthServer: Server | undefined;
+  const healthPort = config.HEALTH_PORT;
+  healthServer = createServer((req, res) => {
+    if (req.url === '/healthz') {
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end('ok');
+      return;
+    }
+    if (req.url === '/readyz') {
+      const ready = redisPub.status === 'ready';
+      res.writeHead(ready ? 200 : 503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ready, redisStatus: redisPub.status }));
+      return;
+    }
+    res.writeHead(404);
+    res.end('Not Found');
+  });
+  healthServer.listen(healthPort, () => {
+    logger.info({ port: healthPort }, 'Health server started');
+  });
+
   // Launch bot
   bot.launch();
   logger.info('Telegram gateway bot launched');
@@ -62,6 +85,7 @@ async function main(): Promise<void> {
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'Shutting down...');
     bot.stop(signal);
+    healthServer?.close();
     await bridge.stop();
     redisPub.disconnect();
     process.exit(0);
