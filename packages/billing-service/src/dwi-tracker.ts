@@ -1,4 +1,5 @@
-import { createServer, type Server } from 'node:http';
+import { createServer, type Server, type IncomingMessage, type ServerResponse } from 'node:http';
+import { Registry, collectDefaultMetrics, Counter, Gauge } from 'prom-client';
 import { Redis } from 'ioredis';
 import {
   createLogger,
@@ -64,6 +65,40 @@ let invoiceGenerator: InvoiceGenerator;
 let budgetEnforcer: BudgetEnforcer;
 let qualityGateMonitor: QualityGateMonitor;
 let healthServer: Server | null = null;
+
+// Prometheus metrics
+const metricsRegistry = new Registry();
+collectDefaultMetrics({ register: metricsRegistry });
+
+const billingMetrics = {
+  dwisProcessed: new Counter({
+    name: 'billing_dwis_processed_total',
+    help: 'Total DWI records processed',
+    labelNames: ['status'] as const,
+    registers: [metricsRegistry],
+  }),
+  dwisBillable: new Counter({
+    name: 'billing_dwis_billable_total',
+    help: 'Total DWIs marked billable',
+    registers: [metricsRegistry],
+  }),
+  revenueUsd: new Counter({
+    name: 'billing_revenue_usd_total',
+    help: 'Total revenue in USD from billable DWIs',
+    registers: [metricsRegistry],
+  }),
+  gateEvents: new Counter({
+    name: 'billing_gate_events_total',
+    help: 'DWI gate events received',
+    labelNames: ['gate'] as const,
+    registers: [metricsRegistry],
+  }),
+  redisConnected: new Gauge({
+    name: 'billing_redis_connected',
+    help: 'Whether Redis subscriber is connected',
+    registers: [metricsRegistry],
+  }),
+};
 
 /**
  * Main entry point for the billing service.
@@ -379,6 +414,17 @@ async function startHealthServer(port: number): Promise<void> {
       const ready = sub.status === 'ready';
       res.writeHead(ready ? 200 : 503, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ready, redisStatus: sub.status }));
+      return;
+    }
+
+    if (req.url === '/metrics') {
+      metricsRegistry.metrics().then((metrics) => {
+        res.writeHead(200, { 'Content-Type': metricsRegistry.contentType });
+        res.end(metrics);
+      }).catch(() => {
+        res.writeHead(500);
+        res.end('Error collecting metrics');
+      });
       return;
     }
 

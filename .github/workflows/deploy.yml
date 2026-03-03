@@ -1,0 +1,59 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Validate kustomize manifests
+        run: kubectl kustomize deploy/kustomize/overlays/${{ inputs.environment }}
+
+      - name: Apply kustomize manifests
+        run: |
+          kubectl apply -k deploy/kustomize/overlays/${{ inputs.environment }}
+          echo "Waiting for rollout..."
+
+      - name: Wait for billing-service rollout
+        run: kubectl rollout status deployment/billing-service -n agent-shared --timeout=120s
+
+      - name: Wait for tenant-manager rollout
+        run: kubectl rollout status deployment/tenant-manager -n agent-shared --timeout=120s
+
+      - name: Wait for dashboard rollout
+        run: kubectl rollout status deployment/dashboard -n agent-shared --timeout=120s
+
+      - name: Wait for telegram-gateway rollout
+        run: kubectl rollout status deployment/telegram-gateway -n agent-shared --timeout=120s
+
+      - name: Verify health endpoints
+        run: |
+          echo "Checking billing-service health..."
+          kubectl exec -n agent-shared deployment/billing-service -- wget -qO- http://localhost:8081/healthz || true
+          echo "Checking tenant-manager health..."
+          kubectl exec -n agent-shared deployment/tenant-manager -- wget -qO- http://localhost:8082/healthz || true

@@ -15,6 +15,7 @@
     "@agentcoders/shared": "workspace:*",
     "drizzle-orm": "^0.38.0",
     "ioredis": "^5.4.0",
+    "prom-client": "^15.1.0",
     "stripe": "^17.5.0"
   },
   "devDependencies": {

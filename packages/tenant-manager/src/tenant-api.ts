@@ -27,6 +27,7 @@ import {
   insurancePolicies,
 } from '@agentcoders/shared';
 import { sql } from 'drizzle-orm';
+import { Registry, collectDefaultMetrics, Counter, Histogram } from 'prom-client';
 import type { TenantVertical, VerticalType } from '@agentcoders/shared';
 
 import { OnboardingService, type SignupParams } from './onboarding.js';
@@ -61,6 +62,31 @@ const db = getDb(config.DATABASE_URL);
 const onboarding = new OnboardingService(db, logger);
 const quotaManager = new QuotaManager(db, logger);
 
+// Prometheus metrics
+const metricsRegistry = new Registry();
+collectDefaultMetrics({ register: metricsRegistry });
+
+const apiMetrics = {
+  requestsTotal: new Counter({
+    name: 'tenant_manager_requests_total',
+    help: 'Total API requests',
+    labelNames: ['method', 'route', 'status'] as const,
+    registers: [metricsRegistry],
+  }),
+  requestDuration: new Histogram({
+    name: 'tenant_manager_request_duration_seconds',
+    help: 'API request duration',
+    buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5],
+    labelNames: ['route'] as const,
+    registers: [metricsRegistry],
+  }),
+  tenantsActive: new Counter({
+    name: 'tenant_manager_tenants_created_total',
+    help: 'Total tenants created',
+    registers: [metricsRegistry],
+  }),
+};
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -93,9 +119,10 @@ function matchRoute(
   method: string,
 ): { route: string; tenantId?: string } | null {
 
-  // Health
+  // Health + metrics
   if (pathname === '/healthz') return { route: 'healthz' };
   if (pathname === '/readyz') return { route: 'readyz' };
+  if (pathname === '/metrics') return { route: 'metrics' };
 
   // POST /api/tenants
   if (pathname === '/api/tenants' && method === 'POST') {
@@ -211,8 +238,8 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     return;
   }
 
-  // Auth guard — bypass health endpoints for K8s probes
-  if (matched.route !== 'healthz' && matched.route !== 'readyz') {
+  // Auth guard — bypass health and metrics endpoints for K8s probes
+  if (matched.route !== 'healthz' && matched.route !== 'readyz' && matched.route !== 'metrics') {
     const token = extractBearerToken(req.headers.authorization);
     if (!token || !validateBearerToken(token, config.API_KEY_SECRET)) {
       jsonResponse(res, 401, { error: 'Unauthorized' });
@@ -230,6 +257,17 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     case 'readyz': {
       // Could check DB connectivity; for MVP just return ok
       jsonResponse(res, 200, { status: 'ok' });
+      return;
+    }
+
+    case 'metrics': {
+      metricsRegistry.metrics().then((metrics) => {
+        res.writeHead(200, { 'Content-Type': metricsRegistry.contentType });
+        res.end(metrics);
+      }).catch(() => {
+        res.writeHead(500);
+        res.end('Error collecting metrics');
+      });
       return;
     }
 
